@@ -1,0 +1,42 @@
+{
+  "zoopla_victoria_2bed_scrape": {
+    "url": "https://www.zoopla.co.uk/to-rent/property/london/victoria/?beds_min=2&price_frequency=per_month&price_max=3000&price_min=2000&q=Victoria%2C%20London&radius=0.25&search_source=to-rent",
+    "success": false,
+    "error": "'ScrapeResponse' object has no attribute 'content'",
+    "timestamp": "2025-07-07T15:18:24.463288"
+  },
+  "zoopla_victoria_flats_scrape": {
+    "url": "https://www.zoopla.co.uk/to-rent/flats/london/victoria/?beds_max=2&beds_min=0&price_frequency=per_month&price_max=3000&price_min=2000&q=Victoria,+London&radius=0&search_source=to-rent",
+    "success": false,
+    "error": "'ScrapeResponse' object has no attribute 'content'",
+    "timestamp": "2025-07-07T15:18:29.889170"
+  },
+  "rightmove_london_rent_scrape": {
+    "url": "https://www.rightmove.co.uk/property-to-rent/find.html?locationIdentifier=REGION%5E87490&minBedrooms=2&maxPrice=3000&radius=0.25&propertyTypes=&includeLetAgreed=false&mustHave=&dontShow=&furnishTypes=&keywords=",
+    "success": false,
+    "error": "'ScrapeResponse' object has no attribute 'content'",
+    "timestamp": "2025-07-07T15:18:37.829788"
+  },
+  "crawl_test": {
+    "url": "https://www.rightmove.co.uk/property-to-rent/find.html?locationIdentifier=REGION%5E87490&minBedrooms=2&maxPrice=3000&radius=0.25",
+    "success": true,
+    "pages_found": 2,
+    "sample_urls": [
+      null,
+      null
+    ],
+    "timestamp": "2025-07-07T15:18:57.755309"
+  },
+  "property_extract_0": {
+    "url": "https://www.rightmove.co.uk/properties/147537623",
+    "success": false,
+    "error": "'ScrapeResponse' object has no attribute 'content'",
+    "timestamp": "2025-07-07T15:19:05.441929"
+  },
+  "property_extract_1": {
+    "url": "https://www.zoopla.co.uk/to-rent/details/70186875",
+    "success": false,
+    "error": "'ScrapeResponse' object has no attribute 'content'",
+    "timestamp": "2025-07-07T15:19:14.123965"
+  }
+}

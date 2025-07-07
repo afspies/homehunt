@@ -1,0 +1,65 @@
+{
+  "test_timestamp": 1751899702.58414,
+  "results": {
+    "rightmove": [
+      {
+        "property_id": "164209706",
+        "portal": "rightmove",
+        "status_code": 200,
+        "success": true,
+        "response_time": 0.19430208206176758,
+        "content_length": 327486
+      },
+      {
+        "property_id": "164244281",
+        "portal": "rightmove",
+        "status_code": 200,
+        "success": true,
+        "response_time": 0.1846630573272705,
+        "content_length": 475382
+      },
+      {
+        "property_id": "164223689",
+        "portal": "rightmove",
+        "status_code": 200,
+        "success": true,
+        "response_time": 0.21861815452575684,
+        "content_length": 360831
+      }
+    ],
+    "zoopla": [
+      {
+        "property_id": "70186875",
+        "url": "https://www.zoopla.co.uk/to-rent/details/70186875",
+        "success": false,
+        "error": "All URL patterns failed",
+        "portal": "zoopla"
+      },
+      {
+        "property_id": "70000000",
+        "url": "https://www.zoopla.co.uk/to-rent/details/70000000",
+        "success": false,
+        "error": "All URL patterns failed",
+        "portal": "zoopla"
+      },
+      {
+        "property_id": "69999999",
+        "url": "https://www.zoopla.co.uk/to-rent/details/69999999",
+        "success": false,
+        "error": "All URL patterns failed",
+        "portal": "zoopla"
+      }
+    ]
+  },
+  "summary": {
+    "rightmove_success_rate": 1.0,
+    "zoopla_success_rate": 0.0,
+    "rightmove_403_errors": 0,
+    "zoopla_403_errors": 0
+  },
+  "recommendations": {
+    "rightmove": "Direct HTTP scraping viable",
+    "zoopla": "Fire Crawl recommended",
+    "overall_strategy": "Hybrid approach - Fire Crawl for discovery, direct HTTP where possible"
+  }
+}
