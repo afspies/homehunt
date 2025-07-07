@@ -176,7 +176,7 @@ class PropertyListing(BaseModel):
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for database storage"""
-        return self.model_dump(exclude_none=True)
+        return self.model_dump(exclude_none=True, mode='json')
 
     @classmethod
     def from_extraction_result(
