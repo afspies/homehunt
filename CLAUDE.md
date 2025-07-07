@@ -4,7 +4,7 @@
 HomeHunt is an async Python CLI tool that automates property search across Rightmove and Zoopla, enriches listings with commute times, and sends real-time alerts for properties matching user criteria.
 
 ## Development Environment
-- **Python Version**: 3.11+
+- **Python Version**: 3.12 (conda environment: home_hunt_env)
 - **Environment Manager**: Anaconda (conda)
 - **Package Manager**: pip within conda environment
 - **Version Control**: Git
@@ -25,11 +25,10 @@ Example: `feat: implement Rightmove search pagination`
 ### 2. Anaconda Environment Setup
 Always use Anaconda for Python environment management:
 ```bash
-# Create environment
-conda create -n homehunt python=3.11
+# Environment already created: home_hunt_env (Python 3.12)
 
 # Activate environment
-conda activate homehunt
+conda activate home_hunt_env
 
 # Install dependencies
 pip install -r requirements.txt
