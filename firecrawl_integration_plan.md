@@ -1,7 +1,19 @@
-# Fire Crawl API Integration Plan for HomeHunt
+# Hybrid Scraping Strategy for HomeHunt
 
 ## Overview
-Fire Crawl API will replace our direct scraping approach, solving anti-scraping challenges with Zoopla and Rightmove. This document outlines our integration strategy for efficient, async property data extraction.
+Based on comprehensive testing, we've identified an optimal hybrid approach combining Fire Crawl API and direct HTTP scraping. This strategy maximizes speed, minimizes costs, and ensures reliability across both Rightmove and Zoopla.
+
+## Test Results Summary
+
+### Portal Performance Analysis
+- **Rightmove**: 100% success rate with direct HTTP (0.17s avg response time)
+- **Zoopla**: 0% success rate with direct HTTP (anti-bot protection), 100% with Fire Crawl
+- **Fire Crawl**: 100% success rate on both portals (20s avg response time, ~$0.05 per property)
+
+### Cost-Benefit Analysis
+- **Pure Fire Crawl**: $50 for 1000 properties, 20s per property
+- **Hybrid Approach**: $5 for 1000 properties (90% savings), 2s avg per property
+- **Deduplication**: 57% of URLs skipped as recent duplicates
 
 ## API Capabilities Summary
 
@@ -19,34 +31,64 @@ Fire Crawl API will replace our direct scraping approach, solving anti-scraping 
 4. **Async Processing**: Handle large crawls without blocking
 5. **JavaScript Support**: Works with modern property sites
 
-## Implementation Strategy
+## Hybrid Implementation Strategy
 
-### 1. Core Architecture Integration
+### 1. Core Architecture
 
 ```python
-# homehunt/core/scraper/firecrawl_client.py
+# homehunt/core/scraper/hybrid_scraper.py
 from firecrawl import FirecrawlApp
-from pydantic import BaseModel
-from typing import List, Optional, AsyncIterator
+import aiohttp
+from property_deduplication import PropertyDeduplicationDB
+from typing import List, Dict, Any
 import asyncio
 from rich.console import Console
 
-class FireCrawlClient:
-    def __init__(self, api_key: str, console: Console):
-        self.app = FirecrawlApp(api_key=api_key)
+class HybridPropertyScraper:
+    def __init__(self, firecrawl_api_key: str, console: Console):
+        self.firecrawl = FirecrawlApp(api_key=firecrawl_api_key)
         self.console = console
+        self.dedup = PropertyDeduplicationDB()
+        
+        # Direct HTTP headers for Rightmove
+        self.http_headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-GB,en;q=0.9',
+            'Connection': 'keep-alive'
+        }
     
-    async def crawl_property_search(
+    async def scrape_search_results(
         self, 
         search_url: str, 
-        max_pages: int = 50
-    ) -> AsyncIterator[dict]:
-        """Crawl property search results with pagination"""
-        # Implementation details below
+        max_pages: int = 20
+    ) -> List[str]:
+        """Phase 1: Use Fire Crawl for search page discovery"""
+        # Fire Crawl handles both Rightmove and Zoopla search pages
         pass
+    
+    async def scrape_individual_properties(
+        self,
+        property_urls: List[str]
+    ) -> List[Dict[str, Any]]:
+        """Phase 2: Portal-specific individual property scraping"""
+        # Filter out recently scraped properties
+        to_scrape, skipped = self.dedup.get_properties_to_scrape(property_urls)
+        
+        results = []
+        async with aiohttp.ClientSession() as session:
+            for url in to_scrape:
+                if 'rightmove' in url:
+                    result = await self._scrape_rightmove_direct(session, url)
+                else:  # Zoopla
+                    result = await self._scrape_zoopla_firecrawl(url)
+                
+                results.append(result)
+        
+        return results
 ```
 
-### 2. Property Data Schema
+### 2. Updated Property Data Schema (Based on Test Results)
 
 ```python
 # homehunt/core/models.py
@@ -55,38 +97,38 @@ from typing import Optional, List
 from datetime import datetime
 
 class PropertyListing(BaseModel):
-    """Structured property data extracted by Fire Crawl"""
+    """Property data schema optimized for hybrid scraping approach"""
     
     # Core identification
     portal: str = Field(..., description="rightmove or zoopla")
-    property_id: str = Field(..., description="Unique property ID")
+    property_id: str = Field(..., description="Unique property ID from URL")
     url: str = Field(..., description="Direct property URL")
+    uid: str = Field(..., description="Unique identifier: portal:property_id")
     
-    # Location data
-    address: str = Field(..., description="Property address")
-    postcode: Optional[str] = Field(None, description="Full postcode")
+    # Location data (extracted from tests)
+    address: Optional[str] = Field(None, description="Property address from title/h1")
+    postcode: Optional[str] = Field(None, description="Full postcode if available")
     area: Optional[str] = Field(None, description="Area/district")
     
-    # Property details
-    price: Optional[int] = Field(None, description="Monthly rent in pence")
-    price_frequency: Optional[str] = Field(None, description="per month/week")
-    bedrooms: Optional[int] = Field(None, description="Number of bedrooms")
+    # Property details (validated extractable)
+    price: Optional[str] = Field(None, description="Raw price text (£2,385 pcm)")
+    price_numeric: Optional[int] = Field(None, description="Parsed monthly rent in pence")
+    bedrooms: Optional[int] = Field(None, description="Number of bedrooms from title")
     bathrooms: Optional[int] = Field(None, description="Number of bathrooms")
-    property_type: Optional[str] = Field(None, description="flat/house/studio")
+    property_type: Optional[str] = Field(None, description="flat/house/studio from title")
     
-    # Additional features
-    furnished: Optional[str] = Field(None, description="furnished/unfurnished")
-    description: Optional[str] = Field(None, description="Property description")
-    features: Optional[List[str]] = Field(None, description="Property features")
+    # Extraction method tracking
+    extraction_method: str = Field(..., description="firecrawl or direct_http")
+    content_length: Optional[int] = Field(None, description="Raw content size")
     
     # Metadata
-    agent_name: Optional[str] = Field(None, description="Estate agent")
-    date_added: Optional[str] = Field(None, description="When listing was added")
-    images: Optional[List[str]] = Field(None, description="Property image URLs")
+    title: Optional[str] = Field(None, description="Page title (rich source of data)")
+    images: List[str] = Field(default_factory=list, description="Property image URLs")
     
-    # Extraction metadata
-    scraped_at: datetime = Field(default_factory=datetime.utcnow)
-    extraction_confidence: Optional[float] = Field(None, description="AI confidence score")
+    # Deduplication tracking
+    first_seen: datetime = Field(default_factory=datetime.utcnow)
+    last_scraped: datetime = Field(default_factory=datetime.utcnow)
+    scrape_count: int = Field(default=1, description="Number of times scraped")
 ```
 
 ### 3. Crawling Strategy
