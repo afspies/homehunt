@@ -14,3 +14,10 @@ anyio==4.6.2
 aiosqlite==0.20.0
 firecrawl-py==0.0.19
 pydantic-settings==2.5.2
+# Additional dependencies for core data layer
+sqlalchemy[asyncio]==2.0.23
+pytest==8.3.3
+pytest-asyncio==0.24.0
+pytest-cov==6.0.0
+black==24.8.0
+ruff==0.6.9
