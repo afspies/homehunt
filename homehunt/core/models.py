@@ -97,6 +97,8 @@ class PropertyListing(BaseModel):
     
     # Rental details
     let_type: Optional[LetType] = Field(None, description="Type of rental let")
+    new_build: Optional[bool] = Field(None, description="Is a new build property")
+    is_south_london: Optional[bool] = Field(None, description="Property is in South London")
 
     # Agent and contact info
     agent_name: Optional[str] = Field(None, description="Estate agent name")
@@ -306,6 +308,8 @@ class PropertyListing(BaseModel):
             'balcony': extracted_features.get('balcony'),
             'pets_allowed': extracted_features.get('pets_allowed'),
             'let_type': extracted_features.get('let_type'),
+            'new_build': extracted_features.get('new_build'),
+            'is_south_london': extracted_features.get('is_south_london'),
             # Use extracted coordinates (from maps, embeds, or original data)
             'latitude': latitude,
             'longitude': longitude,

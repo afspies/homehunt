@@ -19,13 +19,15 @@ from homehunt.core.models import (
     Portal,
     PropertyListing,
     ScrapingResult,
-    SearchConfig,
     ExtractionMethod,
 )
 
 from .base import BaseScraper, RateLimiter, ScraperError
 from .direct_http import DirectHTTPScraper
 from .firecrawl import FireCrawlScraper
+
+# Import URL builder from CLI
+from homehunt.cli.url_builder import build_search_urls
 
 
 class HybridScraper:
@@ -82,7 +84,7 @@ class HybridScraper:
     
     async def search_properties(
         self,
-        config: SearchConfig,
+        config,  # CLI SearchConfig from homehunt.cli.config
         show_progress: bool = True,
     ) -> List[PropertyListing]:
         """
@@ -154,7 +156,7 @@ class HybridScraper:
     
     async def _discover_property_urls(
         self,
-        config: SearchConfig,
+        config,  # CLI SearchConfig from homehunt.cli.config
         progress: Progress,
         task_id: int,
     ) -> List[str]:
@@ -162,22 +164,17 @@ class HybridScraper:
         all_urls = []
         
         try:
-            # Generate search URLs for each portal
+            # Generate search URLs for each portal using CLI URL builder
+            search_urls_dict = build_search_urls(config)
             search_urls = []
             
-            for portal in config.portals:
-                if portal == Portal.RIGHTMOVE:
-                    base_url = config.build_rightmove_url()
-                elif portal == Portal.ZOOPLA:
-                    base_url = config.build_zoopla_url()
-                else:
-                    continue
-                
-                # Generate paginated URLs
-                paginated_urls = await self.firecrawl_scraper.get_pagination_urls(
-                    base_url, config.max_pages
-                )
-                search_urls.extend(paginated_urls)
+            for portal, urls in search_urls_dict.items():
+                for base_url in urls:
+                    # Generate paginated URLs
+                    paginated_urls = await self.firecrawl_scraper.get_pagination_urls(
+                        base_url, config.max_results or 100
+                    )
+                    search_urls.extend(paginated_urls)
             
             progress.update(task_id, total=len(search_urls))
             
@@ -486,3 +483,12 @@ Success Rate: {
         except Exception as e:
             self.logger.error(f"Error scraping single property {url}: {e}")
             return None
+    
+    async def close(self):
+        """Close scraper resources"""
+        if hasattr(self, 'direct_http_scraper'):
+            await self.direct_http_scraper.close()
+        if hasattr(self, 'firecrawl_scraper'):
+            await self.firecrawl_scraper.close()
+        if hasattr(self, 'database'):
+            await self.database.close()

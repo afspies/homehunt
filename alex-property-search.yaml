@@ -1,0 +1,227 @@
+name: "Alex's London Property Search"
+description: "Professional 1-2 bedroom properties in North London with commute to Victoria"
+
+version: "1.0"
+
+# Global settings
+concurrent_searches: 3
+save_to_database: true
+deduplicate_across_profiles: true
+enable_detailed_logging: false
+
+# Global commute filters (applied to all profiles)
+global_commute_filters:
+  - destination: "Victoria Station, London"
+    max_time: 30
+    transport_modes: ["public_transport"]
+    departure_times: ["08:00", "08:30", "09:00"]
+    weight: 1.0
+
+# Search profiles
+profiles:
+  - name: "north_london_premium"
+    description: "Premium areas: Islington, Notting Hill - max budget for quality"
+    search:
+      location: "Islington, London"
+      portals: ["rightmove", "zoopla"]
+      min_bedrooms: 1
+      max_bedrooms: 2
+      min_price: 2500
+      max_price: 3200
+      property_types: ["flat", "apartment"]
+      furnished: "any"
+      parking: false  # Optional in these areas
+      garden: false   # Optional in central areas
+      radius: 1.0
+      sort_order: "price_asc"
+      max_results: 25
+      exclude_shared: true
+      exclude_retirement: true
+      available_from: "2024-09-20"
+    
+    # Multi-location search for premium areas
+    multi_location:
+      name: "Premium North London Areas"
+      locations: ["Islington", "Notting Hill Gate", "Angel", "King's Cross"]
+      combine_results: true
+      max_results_per_location: 15
+      location_overrides:
+        "Notting Hill Gate":
+          max_price: 3200
+          min_price: 2800
+        "Islington":
+          max_price: 3000
+          min_price: 2500
+        "Angel":
+          max_price: 2900
+          min_price: 2400
+        "King's Cross":
+          max_price: 2800
+          min_price: 2200
+    
+    # Property scoring for premium areas
+    enable_scoring: true
+    score_weights:
+      price: 0.25      # Less weight on price for premium areas
+      commute: 0.40    # High weight on commute convenience
+      size: 0.25       # Prefer 2-bedroom over 1-bedroom
+      features: 0.10   # Nice to have features
+    
+    # Auto-export for premium properties
+    auto_export: true
+    export_formats: ["csv", "google_sheets"]
+    export_configs:
+      - format: "csv"
+        output_path: "./exports/alex-searches/north_london_premium.csv"
+        include_fields: ["title", "price", "bedrooms", "area", "address", "url", "commute_public_transport", "parking", "garden"]
+
+  - name: "west_london_value"
+    description: "Value areas: Hammersmith, Barons Court - good transport links"
+    search:
+      location: "Hammersmith, London"
+      portals: ["rightmove", "zoopla"]
+      min_bedrooms: 1
+      max_bedrooms: 2
+      min_price: 2000
+      max_price: 2800
+      property_types: ["flat", "apartment"]
+      furnished: "any"
+      parking: true   # Prefer parking in outer areas
+      garden: false   # Optional
+      radius: 1.0
+      sort_order: "price_asc"
+      max_results: 30
+      exclude_shared: true
+      exclude_retirement: true
+      available_from: "2024-09-20"
+    
+    # Multi-location search for West London
+    multi_location:
+      name: "West London Value Areas"
+      locations: ["Hammersmith", "Barons Court", "Fulham Broadway", "Earls Court"]
+      combine_results: true
+      max_results_per_location: 20
+      location_overrides:
+        "Hammersmith":
+          max_price: 2800
+          min_price: 2200
+        "Barons Court":
+          max_price: 2600
+          min_price: 2000
+        "Fulham Broadway":
+          max_price: 2700
+          min_price: 2100
+        "Earls Court":
+          max_price: 2500
+          min_price: 2000
+    
+    # Property scoring for value areas
+    enable_scoring: true
+    score_weights:
+      price: 0.35      # Higher weight on price for value areas
+      commute: 0.35    # Still important for commute
+      size: 0.20       # Prefer 2-bedroom
+      features: 0.10   # Features like parking are weighted in search
+    
+    # Auto-export for value properties
+    auto_export: true
+    export_formats: ["csv", "google_sheets"]
+    export_configs:
+      - format: "csv"
+        output_path: "./exports/alex-searches/west_london_value.csv"
+        include_fields: ["title", "price", "bedrooms", "area", "address", "url", "commute_public_transport", "parking", "garden"]
+
+  - name: "victoria_adjacent"
+    description: "Properties very close to Victoria - premium for convenience"
+    search:
+      location: "Victoria, London"
+      portals: ["rightmove", "zoopla"]
+      min_bedrooms: 1
+      max_bedrooms: 2
+      min_price: 2200
+      max_price: 3200
+      property_types: ["flat", "apartment", "studio"]
+      furnished: "any"
+      parking: false  # Unlikely in central Victoria
+      garden: false   # Unlikely in central area
+      radius: 0.5     # Very close to Victoria
+      sort_order: "price_asc"
+      max_results: 15
+      exclude_shared: true
+      exclude_retirement: true
+      available_from: "2024-09-20"
+    
+    # No multi-location for Victoria (specific area)
+    
+    # Commute filters (very short commute)
+    commute_filters:
+      - destination: "Victoria Station, London"
+        max_time: 15  # Very short commute required
+        transport_modes: ["walking", "public_transport"]
+        departure_times: ["08:00", "08:30", "09:00"]
+        weight: 1.0
+    
+    # Property scoring for Victoria area
+    enable_scoring: true
+    score_weights:
+      price: 0.30
+      commute: 0.50    # Extremely important near Victoria
+      size: 0.15
+      features: 0.05   # Features less important for convenience
+    
+    # Auto-export
+    auto_export: true
+    export_formats: ["csv", "google_sheets"]
+    export_configs:
+      - format: "csv"
+        output_path: "./exports/alex-searches/victoria_adjacent.csv"
+        include_fields: ["title", "price", "bedrooms", "area", "address", "url", "commute_public_transport", "commute_walking"]
+
+# Default export settings
+default_export_path: "./exports/alex-searches"
+
+# Exclude areas south of Thames (to be implemented)
+# This would need custom filtering logic to be added
+exclude_areas: [
+  "South London",
+  "Southwark", 
+  "Bermondsey",
+  "London Bridge",
+  "Borough",
+  "Elephant and Castle",
+  "Waterloo",
+  "Lambeth",
+  "Clapham",
+  "Battersea",
+  "Wandsworth",
+  "Putney",
+  "Wimbledon",
+  "Tooting",
+  "Streatham",
+  "Brixton",
+  "Camberwell",
+  "Peckham",
+  "New Cross",
+  "Greenwich",
+  "Deptford",
+  "Lewisham",
+  "Blackheath",
+  "Catford",
+  "Croydon",
+  "Crystal Palace"
+]
+
+# Preferred property features (to be implemented)
+preferred_features: [
+  "new build",
+  "modern",
+  "recently renovated", 
+  "contemporary",
+  "luxury",
+  "high specification",
+  "built in 2020",
+  "built in 2021", 
+  "built in 2022",
+  "built in 2023",
+  "built in 2024"
+]

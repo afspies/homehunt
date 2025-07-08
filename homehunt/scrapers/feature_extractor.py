@@ -109,6 +109,54 @@ class FeatureExtractor:
         ]
     }
     
+    NEW_BUILD_PATTERNS = [
+        r'new\s*build',
+        r'brand\s*new',
+        r'newly\s*built',
+        r'recently\s*completed',
+        r'built\s*in\s*(?:2020|2021|2022|2023|2024)',
+        r'completed\s*in\s*(?:2020|2021|2022|2023|2024)',
+        r'modern\s*development',
+        r'contemporary\s*build',
+        r'luxury\s*development',
+        r'high\s*specification',
+        r'premium\s*development',
+        r'designer\s*(?:apartment|flat)',
+        r'state\s*of\s*the\s*art'
+    ]
+    
+    SOUTH_LONDON_AREAS = [
+        r'south\s*london',
+        r'southwark',
+        r'bermondsey',
+        r'london\s*bridge',
+        r'borough(?!\s*market)',  # Exclude "Borough Market" but include "Borough"
+        r'elephant\s*(?:and|&)\s*castle',
+        r'waterloo',
+        r'lambeth',
+        r'clapham',
+        r'battersea',
+        r'wandsworth',
+        r'putney',
+        r'wimbledon',
+        r'tooting',
+        r'streatham',
+        r'brixton',
+        r'camberwell',
+        r'peckham',
+        r'new\s*cross',
+        r'greenwich',
+        r'deptford',
+        r'lewisham',
+        r'blackheath',
+        r'catford',
+        r'croydon',
+        r'crystal\s*palace',
+        r'se\d+',  # South East London postcodes
+        r'sw\d+',  # South West London postcodes (many are actually North, but some like SW8, SW9 are South)
+        r'cr\d+',  # Croydon postcodes
+    ]
+    
     @staticmethod
     def extract_parking(text: str) -> Optional[bool]:
         """Extract parking availability from text"""
@@ -212,6 +260,36 @@ class FeatureExtractor:
         return None
     
     @staticmethod
+    def extract_new_build(text: str) -> Optional[bool]:
+        """Extract new build status from text"""
+        if not text:
+            return None
+        
+        text_lower = text.lower()
+        
+        # Check for new build indicators
+        for pattern in FeatureExtractor.NEW_BUILD_PATTERNS:
+            if re.search(pattern, text_lower):
+                return True
+        
+        return None
+    
+    @staticmethod
+    def is_south_london(text: str) -> bool:
+        """Check if property is in South London areas"""
+        if not text:
+            return False
+        
+        text_lower = text.lower()
+        
+        # Check for South London area indicators
+        for pattern in FeatureExtractor.SOUTH_LONDON_AREAS:
+            if re.search(pattern, text_lower):
+                return True
+        
+        return False
+    
+    @staticmethod
     def extract_all_features(text: str, features_list: List[str] = None) -> dict:
         """
         Extract all property features from text
@@ -236,7 +314,9 @@ class FeatureExtractor:
             'garden': FeatureExtractor.extract_garden(combined_text),
             'balcony': FeatureExtractor.extract_balcony(combined_text),
             'pets_allowed': FeatureExtractor.extract_pets_allowed(combined_text),
-            'let_type': FeatureExtractor.extract_let_type(combined_text)
+            'let_type': FeatureExtractor.extract_let_type(combined_text),
+            'new_build': FeatureExtractor.extract_new_build(combined_text),
+            'is_south_london': FeatureExtractor.is_south_london(combined_text)
         }
 
 

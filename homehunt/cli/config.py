@@ -180,6 +180,22 @@ class SearchConfig(BaseModel):
         description="Exclude retirement properties"
     )
     
+    # Geographic filtering
+    exclude_areas: Optional[List[str]] = Field(
+        None,
+        description="Areas to exclude from search results"
+    )
+    
+    # Property age and new build preferences
+    new_build_preferred: bool = Field(
+        False,
+        description="Prefer new build properties"
+    )
+    preferred_features: Optional[List[str]] = Field(
+        None,
+        description="Preferred property features (new build, modern, etc.)"
+    )
+    
     @field_validator('max_price')
     def validate_price_range(cls, v, info):
         """Ensure max_price is greater than min_price"""

@@ -56,8 +56,7 @@ async def search_properties(
     
     # Initialize scraper
     scraper = HybridScraper(
-        rate_limit_per_minute=30,
-        max_concurrent_requests=5,
+        max_concurrent=5,
     )
     
     all_properties = []
@@ -71,39 +70,35 @@ async def search_properties(
             console=console,
         ) as progress:
             
-            # Search each portal
-            for portal, urls in search_urls.items():
-                portal_task = progress.add_task(
-                    f"[cyan]Searching {portal.value.title()}...[/cyan]",
-                    total=None
+            # Search using hybrid scraper
+            search_task = progress.add_task(
+                f"[cyan]Searching all portals...[/cyan]",
+                total=None
+            )
+            
+            # Run search across all portals
+            properties = await scraper.search_properties(
+                config=config,
+                show_progress=False,
+            )
+                
+            console.print(
+                f"\n[green]✓[/green] Found {len(properties)} properties across all portals"
+            )
+            
+            # Save to database if enabled
+            if save_to_db and db:
+                saved_count = 0
+                for prop in properties:
+                    if await db.save_property(prop):
+                        saved_count += 1
+                
+                console.print(
+                    f"[green]✓[/green] Saved {saved_count} properties to database"
                 )
-                
-                for url in urls:
-                    # Run search
-                    properties = await scraper.search_and_scrape(
-                        search_url=url,
-                        portal=portal,
-                        max_results=config.max_results,
-                    )
-                    
-                    console.print(
-                        f"\n[green]✓[/green] Found {len(properties)} properties on {portal.value.title()}"
-                    )
-                    
-                    # Save to database if enabled
-                    if save_to_db and db:
-                        saved_count = 0
-                        for prop in properties:
-                            if await db.save_property(prop):
-                                saved_count += 1
-                        
-                        console.print(
-                            f"[green]✓[/green] Saved {saved_count} properties to database"
-                        )
-                    
-                    all_properties.extend(properties)
-                
-                progress.update(portal_task, completed=True)
+            
+            all_properties.extend(properties)
+            progress.update(search_task, completed=True)
         
         # Display results summary
         _display_results_summary(all_properties)
