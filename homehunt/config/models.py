@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel, Field, field_validator
 
 from homehunt.cli.config import CommuteConfig, SearchConfig
+from homehunt.exports.models import ExportConfig
 
 
 class ConfigFormat(str, Enum):
@@ -252,6 +253,12 @@ class SavedSearchProfile(BaseModel):
     export_path: Optional[Path] = Field(
         None,
         description="Export file path (for CSV/JSON)"
+    )
+    
+    # Advanced export configurations
+    export_configs: Optional[List[ExportConfig]] = Field(
+        None,
+        description="Detailed export configurations"
     )
     
     # Scheduling

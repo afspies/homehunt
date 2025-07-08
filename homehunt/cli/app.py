@@ -22,6 +22,14 @@ from homehunt.traveltime.service import TravelTimeService
 from .config import FurnishedType, LetType, SearchConfig, SortOrder
 from .search_command import search_properties
 from .config_commands import init_config, list_configs, run_config, show_config
+from .export_commands import (
+    export_csv,
+    export_json, 
+    export_sheets,
+    export_status,
+    list_export_templates,
+    test_sheets_connection,
+)
 
 # Initialize Typer app
 app = typer.Typer(
@@ -450,6 +458,14 @@ app.command(name="run-config")(run_config)
 app.command(name="init-config")(init_config)
 app.command(name="list-configs")(list_configs)
 app.command(name="show-config")(show_config)
+
+# Export commands
+app.command(name="export-csv")(export_csv)
+app.command(name="export-json")(export_json)
+app.command(name="export-sheets")(export_sheets)
+app.command(name="export-status")(export_status)
+app.command(name="export-templates")(list_export_templates)
+app.command(name="test-sheets")(test_sheets_connection)
 
 
 @app.callback()

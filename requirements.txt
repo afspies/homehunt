@@ -26,3 +26,8 @@ beautifulsoup4==4.12.3
 lxml==5.3.0
 # Configuration file support
 pyyaml==6.0.2
+# Google Sheets API dependencies
+google-auth==2.35.0
+google-auth-oauthlib==1.2.1
+google-auth-httplib2==0.2.0
+google-api-python-client==2.151.0

@@ -342,10 +342,33 @@ class ConfigExecutor:
     
     async def _handle_exports(self, profile: SavedSearchProfile, properties: List[PropertyListing]) -> None:
         """Handle property exports for profile"""
-        # TODO: Implement actual export functionality
-        export_count = len(properties)
-        formats = ', '.join(profile.export_formats or [])
-        console.print(f"[blue]Note: Would export {export_count} properties to {formats}[/blue]")
+        if not properties:
+            return
+        
+        # Use advanced export configs if available
+        if profile.export_configs:
+            from homehunt.exports.service import ExportService
+            from homehunt.core.db import Database
+            export_service = ExportService(self.db or Database())
+            
+            for export_config in profile.export_configs:
+                try:
+                    result = await export_service.export_properties(export_config, properties)
+                    if result.success:
+                        console.print(f"[green]✓ Exported {result.properties_exported} properties via {result.format.value}[/green]")
+                        if result.output_location:
+                            console.print(f"  Location: {result.output_location}")
+                    else:
+                        console.print(f"[red]✗ Export failed: {result.error_message}[/red]")
+                except Exception as e:
+                    console.print(f"[red]Export error: {e}[/red]")
+        
+        # Fallback to legacy export settings
+        elif profile.auto_export and profile.export_formats:
+            export_count = len(properties)
+            formats = ', '.join(profile.export_formats or [])
+            console.print(f"[blue]Note: Would export {export_count} properties to {formats}[/blue]")
+            console.print(f"[yellow]Consider upgrading to export_configs for full functionality[/yellow]")
     
     def _deduplicate_properties(self, properties: List[PropertyListing]) -> List[PropertyListing]:
         """Remove duplicate properties based on URL"""
