@@ -20,6 +20,7 @@ from .models import (
     ExportConfig,
     ExportFormat,
     ExportResult,
+    GoogleSheetsConfig,
     SyncConfig,
     SyncResult,
 )
@@ -250,7 +251,7 @@ class ExportService:
         formatted_properties = []
         
         for prop in properties:
-            # Convert property to dict - only use fields that actually exist
+            # Convert property to dict - now includes all new fields
             data = {
                 'property_id': prop.property_id,
                 'uid': prop.uid,
@@ -264,8 +265,16 @@ class ExportService:
                 'portal': prop.portal.value,
                 'area': prop.area,
                 'address': prop.address,
+                'postcode': prop.postcode,
+                'latitude': prop.latitude,
+                'longitude': prop.longitude,
                 'description': prop.description,
                 'features': ', '.join(prop.features) if prop.features else None,
+                'parking': prop.parking,
+                'garden': prop.garden,
+                'balcony': prop.balcony,
+                'pets_allowed': prop.pets_allowed,
+                'let_type': prop.let_type.value if prop.let_type else None,
                 'furnished': prop.furnished,
                 'available_date': prop.available_date,
                 'agent_name': prop.agent_name,
@@ -273,6 +282,7 @@ class ExportService:
                 'extraction_method': prop.extraction_method.value,
                 'content_length': prop.content_length,
                 'images': ', '.join(prop.images) if prop.images else None,
+                'is_active': prop.is_active,
                 'first_seen': prop.first_seen.strftime(config.date_format) if prop.first_seen else None,
                 'last_seen': prop.last_scraped.strftime(config.date_format) if prop.last_scraped else None,
                 'scrape_count': prop.scrape_count,
@@ -300,7 +310,7 @@ class ExportService:
             
             # Remove metadata if not wanted
             if not config.include_metadata:
-                metadata_fields = ['first_seen', 'last_seen', 'is_active']
+                metadata_fields = ['first_seen', 'last_seen', 'is_active', 'scrape_count', 'extraction_method', 'content_length']
                 for field in metadata_fields:
                     data.pop(field, None)
             
@@ -432,21 +442,39 @@ class ExportService:
                 output_path=Path("./exports/properties_basic.csv"),
                 include_fields=[
                     "title", "price", "bedrooms", "property_type", 
-                    "area", "address", "url", "portal", "last_seen"
+                    "area", "address", "postcode", "parking", "garden", "url", "portal", "last_seen"
                 ]
             ),
             
             "detailed_csv": ExportConfig(
                 format=ExportFormat.CSV,
                 output_path=Path("./exports/properties_detailed.csv"),
-                exclude_fields=["id", "description", "features"]
+                exclude_fields=["description", "features", "images", "extraction_method", "content_length"]
+            ),
+            
+            "features_analysis": ExportConfig(
+                format=ExportFormat.CSV,
+                output_path=Path("./exports/properties_features.csv"),
+                include_fields=[
+                    "title", "price", "bedrooms", "property_type", "area", "address", "postcode",
+                    "parking", "garden", "balcony", "pets_allowed", "let_type", "furnished", "url"
+                ]
+            ),
+            
+            "location_data": ExportConfig(
+                format=ExportFormat.CSV,
+                output_path=Path("./exports/properties_locations.csv"),
+                include_fields=[
+                    "title", "price", "bedrooms", "address", "postcode", "area",
+                    "latitude", "longitude", "portal", "url"
+                ]
             ),
             
             "commute_analysis": ExportConfig(
                 format=ExportFormat.CSV,
                 output_path=Path("./exports/properties_commute.csv"),
                 include_fields=[
-                    "title", "price", "bedrooms", "area", "address",
+                    "title", "price", "bedrooms", "area", "address", "postcode",
                     "commute_public_transport", "commute_cycling", 
                     "score", "url"
                 ]
@@ -463,7 +491,22 @@ class ExportService:
                 ),
                 include_fields=[
                     "title", "price", "bedrooms", "property_type",
-                    "area", "address", "url", "portal", "last_seen"
+                    "area", "address", "postcode", "parking", "garden", "pets_allowed", "url", "portal", "last_seen"
+                ]
+            ),
+            
+            "google_sheets_features": ExportConfig(
+                format=ExportFormat.GOOGLE_SHEETS,
+                google_sheets=GoogleSheetsConfig(
+                    sheet_name="Property Features",
+                    include_headers=True,
+                    clear_existing=False,
+                    append_mode=True
+                ),
+                include_fields=[
+                    "title", "price", "bedrooms", "property_type", "area", "address", "postcode",
+                    "parking", "garden", "balcony", "pets_allowed", "let_type", "furnished", 
+                    "is_active", "portal", "url"
                 ]
             )
         }

@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import Field, Session, SQLModel, create_engine, func, select, update
 
-from .models import ExtractionMethod, Portal, PropertyType
+from .models import ExtractionMethod, LetType, Portal, PropertyType
 
 if TYPE_CHECKING:
     from .models import PropertyListing
@@ -35,6 +35,8 @@ class Listing(SQLModel, table=True):
     address: Optional[str] = Field(None, description="Property address")
     postcode: Optional[str] = Field(None, index=True, description="Full postcode")
     area: Optional[str] = Field(None, index=True, description="Area/district")
+    latitude: Optional[float] = Field(None, description="Property latitude coordinate")
+    longitude: Optional[float] = Field(None, description="Property longitude coordinate")
 
     # Property details
     price: Optional[str] = Field(None, description="Raw price text")
@@ -52,6 +54,15 @@ class Listing(SQLModel, table=True):
     available_date: Optional[str] = Field(None, description="Available from date")
     description: Optional[str] = Field(None, description="Property description")
     features: Optional[str] = Field(None, description="JSON array of features")
+    
+    # Property amenities and features
+    parking: Optional[bool] = Field(None, description="Has parking space/garage")
+    garden: Optional[bool] = Field(None, description="Has garden/outdoor space")
+    balcony: Optional[bool] = Field(None, description="Has balcony/terrace")
+    pets_allowed: Optional[bool] = Field(None, description="Pets allowed")
+    
+    # Rental details
+    let_type: Optional[LetType] = Field(None, description="Type of rental let")
 
     # Agent information
     agent_name: Optional[str] = Field(None, description="Estate agent name")
@@ -75,6 +86,7 @@ class Listing(SQLModel, table=True):
         description="Last successful scrape",
     )
     scrape_count: int = Field(default=1, description="Number of times scraped")
+    is_active: bool = Field(default=True, index=True, description="Property is still available")
     status: str = Field(default="active", index=True, description="Property status")
 
     # Commute analysis
@@ -99,6 +111,8 @@ class Listing(SQLModel, table=True):
             address=listing.address,
             postcode=listing.postcode,
             area=listing.area,
+            latitude=listing.latitude,
+            longitude=listing.longitude,
             price=listing.price,
             price_numeric=listing.price_numeric,
             bedrooms=listing.bedrooms,
@@ -108,6 +122,11 @@ class Listing(SQLModel, table=True):
             available_date=listing.available_date,
             description=listing.description,
             features=json.dumps(listing.features) if listing.features is not None else None,
+            parking=listing.parking,
+            garden=listing.garden,
+            balcony=listing.balcony,
+            pets_allowed=listing.pets_allowed,
+            let_type=listing.let_type,
             agent_name=listing.agent_name,
             agent_phone=listing.agent_phone,
             extraction_method=listing.extraction_method,
@@ -117,6 +136,7 @@ class Listing(SQLModel, table=True):
             first_seen=listing.first_seen,
             last_scraped=listing.last_scraped,
             scrape_count=listing.scrape_count,
+            is_active=listing.is_active,
             commute_public_transport=listing.commute_public_transport,
             commute_cycling=listing.commute_cycling,
             commute_walking=listing.commute_walking,
@@ -140,6 +160,8 @@ class Listing(SQLModel, table=True):
             address=self.address,
             postcode=self.postcode,
             area=self.area,
+            latitude=self.latitude,
+            longitude=self.longitude,
             price=self.price,
             price_numeric=self.price_numeric,
             bedrooms=self.bedrooms,
@@ -149,6 +171,11 @@ class Listing(SQLModel, table=True):
             available_date=self.available_date,
             description=self.description,
             features=features,
+            parking=self.parking,
+            garden=self.garden,
+            balcony=self.balcony,
+            pets_allowed=self.pets_allowed,
+            let_type=self.let_type,
             agent_name=self.agent_name,
             agent_phone=self.agent_phone,
             extraction_method=self.extraction_method,
@@ -158,6 +185,7 @@ class Listing(SQLModel, table=True):
             first_seen=self.first_seen,
             last_scraped=self.last_scraped,
             scrape_count=self.scrape_count,
+            is_active=self.is_active,
             commute_public_transport=self.commute_public_transport,
             commute_cycling=self.commute_cycling,
             commute_walking=self.commute_walking,
@@ -284,6 +312,14 @@ class Database:
                     existing.available_date = listing.available_date
                     existing.agent_name = listing.agent_name
                     existing.agent_phone = listing.agent_phone
+                    existing.parking = listing.parking
+                    existing.garden = listing.garden
+                    existing.balcony = listing.balcony
+                    existing.pets_allowed = listing.pets_allowed
+                    existing.let_type = listing.let_type
+                    existing.latitude = listing.latitude
+                    existing.longitude = listing.longitude
+                    existing.is_active = listing.is_active
                     existing.status = "active"
 
                     # Track price changes
@@ -365,7 +401,7 @@ class Database:
         """
         try:
             async with self.async_session() as session:
-                query = select(Listing).where(Listing.status == "active")
+                query = select(Listing).where(Listing.is_active == True)
 
                 if portal:
                     query = query.where(Listing.portal == portal)
@@ -465,7 +501,7 @@ class Database:
                 await session.execute(
                     update(Listing)
                     .where(Listing.last_scraped < cutoff_date)
-                    .values(status="inactive")
+                    .values(is_active=False, status="inactive")
                 )
 
                 await session.commit()

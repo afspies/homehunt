@@ -29,6 +29,16 @@ class PropertyType(str, Enum):
     UNKNOWN = "unknown"
 
 
+class LetType(str, Enum):
+    """Rental let types"""
+
+    LONG_TERM = "long_term"
+    SHORT_TERM = "short_term"
+    STUDENT = "student"
+    PROFESSIONAL = "professional"
+    UNKNOWN = "unknown"
+
+
 class ExtractionMethod(str, Enum):
     """Method used to extract property data"""
 
@@ -59,6 +69,8 @@ class PropertyListing(BaseModel):
     address: Optional[str] = Field(None, description="Property address from title/h1")
     postcode: Optional[str] = Field(None, description="Full postcode if available")
     area: Optional[str] = Field(None, description="Area/district")
+    latitude: Optional[float] = Field(None, description="Property latitude coordinate")
+    longitude: Optional[float] = Field(None, description="Property longitude coordinate")
 
     # Property details (validated extractable fields)
     price: Optional[str] = Field(None, description="Raw price text (£2,385 pcm)")
@@ -76,6 +88,15 @@ class PropertyListing(BaseModel):
     available_date: Optional[str] = Field(None, description="Available from date")
     description: Optional[str] = Field(None, description="Property description")
     features: List[str] = Field(default_factory=list, description="Property features")
+    
+    # Property amenities and features
+    parking: Optional[bool] = Field(None, description="Has parking space/garage")
+    garden: Optional[bool] = Field(None, description="Has garden/outdoor space")
+    balcony: Optional[bool] = Field(None, description="Has balcony/terrace")
+    pets_allowed: Optional[bool] = Field(None, description="Pets allowed")
+    
+    # Rental details
+    let_type: Optional[LetType] = Field(None, description="Type of rental let")
 
     # Agent and contact info
     agent_name: Optional[str] = Field(None, description="Estate agent name")
@@ -99,6 +120,7 @@ class PropertyListing(BaseModel):
         default_factory=datetime.utcnow, description="Last successful scrape"
     )
     scrape_count: int = Field(default=1, description="Number of times scraped")
+    is_active: bool = Field(default=True, description="Property is still available")
 
     # Commute analysis (filled by TravelTime integration)
     commute_public_transport: Optional[int] = Field(
@@ -173,6 +195,36 @@ class PropertyListing(BaseModel):
         if re.match(postcode_pattern, v.upper()):
             return v.upper()
         return v  # Return as-is if not valid postcode format
+    
+    @field_validator("let_type", mode="before")
+    @classmethod
+    def normalize_let_type(cls, v):
+        """Normalize let type from extracted text"""
+        if v is None:
+            return None
+        
+        v_lower = str(v).lower()
+        
+        # Map common variations
+        type_mapping = {
+            "long term": LetType.LONG_TERM,
+            "long-term": LetType.LONG_TERM,
+            "permanent": LetType.LONG_TERM,
+            "short term": LetType.SHORT_TERM,
+            "short-term": LetType.SHORT_TERM,
+            "temporary": LetType.SHORT_TERM,
+            "student": LetType.STUDENT,
+            "students": LetType.STUDENT,
+            "professional": LetType.PROFESSIONAL,
+            "professionals": LetType.PROFESSIONAL,
+            "corporate": LetType.PROFESSIONAL,
+        }
+        
+        for key, let_type in type_mapping.items():
+            if key in v_lower:
+                return let_type
+        
+        return LetType.UNKNOWN
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for database storage"""
@@ -200,12 +252,48 @@ class PropertyListing(BaseModel):
         Returns:
             PropertyListing instance
         """
+        # Extract features from description and features list
+        from homehunt.scrapers.feature_extractor import FeatureExtractor, extract_postcode, clean_address
+        
+        description = extraction_result.get('description', '')
+        features = extraction_result.get('features', [])
+        address = extraction_result.get('address', '')
+        title = extraction_result.get('title', '')
+        
+        # Extract additional features
+        extracted_features = FeatureExtractor.extract_all_features(
+            text=f"{description} {title}",
+            features_list=features
+        )
+        
+        # Extract and clean postcode from address/title
+        postcode = extract_postcode(f"{address} {title}") or extraction_result.get('postcode')
+        
+        # Clean address
+        if address:
+            address = clean_address(address)
+        
+        # Merge extracted features with existing data
+        enhanced_result = {
+            **extraction_result,
+            'address': address,
+            'postcode': postcode,
+            'parking': extracted_features.get('parking'),
+            'garden': extracted_features.get('garden'),
+            'balcony': extracted_features.get('balcony'),
+            'pets_allowed': extracted_features.get('pets_allowed'),
+            'let_type': extracted_features.get('let_type'),
+            # Latitude/longitude will be filled by geocoding service if needed
+            'latitude': extraction_result.get('latitude'),
+            'longitude': extraction_result.get('longitude'),
+        }
+        
         return cls(
             portal=Portal(portal),
             property_id=property_id,
             url=url,
             extraction_method=ExtractionMethod(extraction_method),
-            **extraction_result,
+            **enhanced_result,
         )
 
 
