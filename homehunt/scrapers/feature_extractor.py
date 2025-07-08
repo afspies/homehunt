@@ -240,6 +240,134 @@ class FeatureExtractor:
         }
 
 
+def extract_coordinates_from_text(text: str) -> Optional[tuple[float, float]]:
+    """
+    Extract GPS coordinates from text, including embedded map metadata
+    
+    Args:
+        text: Text to search for coordinates (HTML, URLs, etc.)
+        
+    Returns:
+        Tuple of (latitude, longitude) or None
+    """
+    if not text:
+        return None
+    
+    # Pattern for decimal coordinates (lat, lng)
+    coordinate_patterns = [
+        # Google Maps URLs: ?q=lat,lng or @lat,lng
+        r'[@?](-?\d+\.?\d*),(-?\d+\.?\d*)',
+        # Explicit lat/lng in various formats
+        r'lat[itude]*[:=]\s*(-?\d+\.?\d*)[,\s]+lng|lon[gitude]*[:=]\s*(-?\d+\.?\d*)',
+        r'lng|lon[gitude]*[:=]\s*(-?\d+\.?\d*)[,\s]+lat[itude]*[:=]\s*(-?\d+\.?\d*)',
+        # JSON-style coordinates
+        r'"lat[itude]*":\s*(-?\d+\.?\d*)[,\s]*"lng|lon[gitude]*":\s*(-?\d+\.?\d*)',
+        r'"lng|lon[gitude]*":\s*(-?\d+\.?\d*)[,\s]*"lat[itude]*":\s*(-?\d+\.?\d*)',
+        # Coordinate pairs in parentheses or brackets
+        r'[\[\(](-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)[\]\)]',
+        # OpenStreetMap/other map services
+        r'mlat=(-?\d+\.?\d*)&mlon=(-?\d+\.?\d*)',
+        # Geographic coordinates in metadata
+        r'geo:(-?\d+\.?\d*),(-?\d+\.?\d*)',
+        # Common coordinate separators
+        r'(-?\d{1,2}\.\d{4,})[,\s]+(-?\d{1,3}\.\d{4,})',
+    ]
+    
+    for pattern in coordinate_patterns:
+        matches = re.findall(pattern, text, re.IGNORECASE)
+        for match in matches:
+            try:
+                # Handle different capture group arrangements
+                if len(match) == 2:
+                    lat_str, lng_str = match
+                elif len(match) == 4:  # lat/lng patterns with both captured
+                    lat_str = match[0] or match[2]
+                    lng_str = match[1] or match[3]
+                else:
+                    continue
+                
+                lat = float(lat_str)
+                lng = float(lng_str)
+                
+                # Validate coordinate ranges
+                if -90 <= lat <= 90 and -180 <= lng <= 180:
+                    # For UK properties, expect roughly these ranges
+                    if 49.5 <= lat <= 61.0 and -8.5 <= lng <= 2.0:
+                        return (lat, lng)
+                    # Also accept if coordinates look reasonable globally
+                    elif abs(lat) > 10 or abs(lng) > 10:  # Not (0,0) or similar
+                        return (lat, lng)
+                        
+            except (ValueError, IndexError):
+                continue
+    
+    return None
+
+
+def extract_coordinates_from_maps_embed(html_content: str) -> Optional[tuple[float, float]]:
+    """
+    Extract coordinates from embedded map iframes, scripts, and image URLs
+    
+    Args:
+        html_content: HTML content containing map embeds
+        
+    Returns:
+        Tuple of (latitude, longitude) or None
+    """
+    if not html_content:
+        return None
+    
+    # Decode HTML entities first
+    import html
+    content = html.unescape(html_content)
+    
+    # Rightmove map image patterns (most reliable for Rightmove)
+    rightmove_patterns = [
+        r'https://media\.rightmove\.co\.uk/map/_generate[^"\']*[?&]latitude=(-?\d+\.?\d*)[^"\']*[?&]longitude=(-?\d+\.?\d*)',
+        r'src=["\']https://media\.rightmove\.co\.uk/map/_generate[^"\']*[?&]latitude=(-?\d+\.?\d*)[^"\']*[?&]longitude=(-?\d+\.?\d*)',
+    ]
+    
+    # Zoopla map patterns
+    zoopla_patterns = [
+        r'https://[^"\']*zoopla[^"\']*[?&]lat=(-?\d+\.?\d*)[^"\']*[?&]lng=(-?\d+\.?\d*)',
+        r'src=["\']https://[^"\']*zoopla[^"\']*[?&]lat=(-?\d+\.?\d*)[^"\']*[?&]lng=(-?\d+\.?\d*)',
+    ]
+    
+    # Google Maps iframe patterns
+    google_patterns = [
+        r'src=["\']https://www\.google\.com/maps/embed[^"\']*[?&]q=(-?\d+\.?\d*),(-?\d+\.?\d*)',
+        r'src=["\']https://maps\.google\.com/[^"\']*[?&]q=(-?\d+\.?\d*),(-?\d+\.?\d*)',
+        r'src=["\']https://www\.google\.com/maps/[^"\']*[@?](-?\d+\.?\d*),(-?\d+\.?\d*)',
+    ]
+    
+    # Map script patterns (Google Maps JavaScript)
+    script_patterns = [
+        r'new\s+google\.maps\.LatLng\(\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*\)',
+        r'lat\s*:\s*(-?\d+\.?\d*)\s*,\s*lng\s*:\s*(-?\d+\.?\d*)',
+        r'latitude\s*:\s*(-?\d+\.?\d*)\s*,\s*longitude\s*:\s*(-?\d+\.?\d*)',
+        r'center\s*:\s*\{\s*lat\s*:\s*(-?\d+\.?\d*)\s*,\s*lng\s*:\s*(-?\d+\.?\d*)\s*\}',
+    ]
+    
+    # Try patterns in order of reliability (Rightmove maps are most accurate)
+    all_patterns = rightmove_patterns + zoopla_patterns + google_patterns + script_patterns
+    
+    for pattern in all_patterns:
+        matches = re.findall(pattern, content, re.IGNORECASE)
+        for match in matches:
+            try:
+                lat = float(match[0])
+                lng = float(match[1])
+                
+                # Validate coordinate ranges for UK
+                if 49.5 <= lat <= 61.0 and -8.5 <= lng <= 2.0:
+                    return (lat, lng)
+                    
+            except (ValueError, IndexError):
+                continue
+    
+    return None
+
+
 def extract_postcode(text: str) -> Optional[str]:
     """
     Extract UK postcode from text

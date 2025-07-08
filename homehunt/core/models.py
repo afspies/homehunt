@@ -253,12 +253,19 @@ class PropertyListing(BaseModel):
             PropertyListing instance
         """
         # Extract features from description and features list
-        from homehunt.scrapers.feature_extractor import FeatureExtractor, extract_postcode, clean_address
+        from homehunt.scrapers.feature_extractor import (
+            FeatureExtractor, extract_postcode, clean_address, 
+            extract_coordinates_from_maps_embed, extract_coordinates_from_text
+        )
         
         description = extraction_result.get('description', '')
         features = extraction_result.get('features', [])
         address = extraction_result.get('address', '')
         title = extraction_result.get('title', '')
+        
+        # Get the raw HTML content for coordinate extraction
+        raw_content = extraction_result.get('raw_content', '')
+        images = extraction_result.get('images', [])
         
         # Extract additional features
         extracted_features = FeatureExtractor.extract_all_features(
@@ -273,6 +280,22 @@ class PropertyListing(BaseModel):
         if address:
             address = clean_address(address)
         
+        # Extract coordinates from embedded maps (prioritize this over geocoding)
+        latitude = extraction_result.get('latitude')
+        longitude = extraction_result.get('longitude')
+        
+        if not (latitude and longitude):
+            # Try to extract from HTML content (map embeds, scripts)
+            coords = extract_coordinates_from_maps_embed(raw_content)
+            if coords:
+                latitude, longitude = coords
+            else:
+                # Try to extract from image URLs or other text
+                all_text = f"{raw_content} {' '.join(images) if images else ''}"
+                coords = extract_coordinates_from_text(all_text)
+                if coords:
+                    latitude, longitude = coords
+        
         # Merge extracted features with existing data
         enhanced_result = {
             **extraction_result,
@@ -283,9 +306,9 @@ class PropertyListing(BaseModel):
             'balcony': extracted_features.get('balcony'),
             'pets_allowed': extracted_features.get('pets_allowed'),
             'let_type': extracted_features.get('let_type'),
-            # Latitude/longitude will be filled by geocoding service if needed
-            'latitude': extraction_result.get('latitude'),
-            'longitude': extraction_result.get('longitude'),
+            # Use extracted coordinates (from maps, embeds, or original data)
+            'latitude': latitude,
+            'longitude': longitude,
         }
         
         return cls(
