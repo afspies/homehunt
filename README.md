@@ -1,6 +1,6 @@
 # HomeHunt 🏡
 
-A powerful async Python CLI tool that automates property search across Rightmove and Zoopla, with intelligent hybrid scraping, deduplication, and rich progress tracking.
+A powerful async Python CLI tool that automates property search across Rightmove and Zoopla, with intelligent hybrid scraping, commute analysis, and advanced configuration-driven searches.
 
 ## ✨ Features
 
@@ -9,7 +9,11 @@ A powerful async Python CLI tool that automates property search across Rightmove
 - **🧠 Smart Deduplication**: Cross-portal property matching with 24-hour window detection  
 - **📊 Rich CLI Interface**: Beautiful progress bars, tables, and real-time feedback
 - **💾 Database Integration**: SQLite with full property history and price tracking
-- **📤 Export Options**: CSV and JSON export capabilities
+- **🚊 Commute Analysis**: TravelTime API integration for intelligent location filtering
+- **⚙️ Advanced Configuration**: YAML/JSON config files for complex search strategies
+- **📍 Multi-Location Searches**: Search multiple areas with location-specific parameters
+- **🎯 Property Scoring**: Customizable ranking based on price, commute, size, and features
+- **📤 Export Options**: CSV and JSON export capabilities with auto-export support
 - **⚡ Async Architecture**: High-performance concurrent operations throughout
 - **🎯 Advanced Filtering**: Price, bedrooms, property type, location radius, features, and more
 
@@ -64,6 +68,42 @@ python -m homehunt search "Bath" --output results.csv --max-results 50
 python -m homehunt search "Brighton" --portals rightmove --sort price_asc
 ```
 
+### Commute Analysis
+```bash
+# Analyze commute times to a destination
+python -m homehunt commute "Canary Wharf" --max-time 45 --transport public_transport
+
+# Multi-modal commute analysis
+python -m homehunt commute "King's Cross" --transport cycling --max-time 30
+
+# Update all properties with commute data
+python -m homehunt commute "EC2A 1AA" --update-all --departure 09:00
+```
+
+### Configuration-Driven Searches
+```bash
+# Create a template configuration file
+python -m homehunt init-config --output my-searches.yaml
+
+# Run all profiles in a configuration
+python -m homehunt run-config my-searches.yaml
+
+# Run specific profiles only
+python -m homehunt run-config my-searches.yaml --profile family_homes --profile budget_flats
+
+# Validate configuration without running
+python -m homehunt run-config my-searches.yaml --validate
+
+# Show what would be executed (dry run)
+python -m homehunt run-config my-searches.yaml --dry-run
+
+# List available configurations
+python -m homehunt list-configs
+
+# Show configuration summary
+python -m homehunt show-config my-searches.yaml
+```
+
 ### Database Management
 ```bash
 # Show database statistics
@@ -86,7 +126,7 @@ Create a `.env` file in the project root:
 # Fire Crawl API (for anti-bot protected content)
 FIRECRAWL_API_KEY=your_firecrawl_api_key
 
-# TravelTime API (optional, for future commute analysis)
+# TravelTime API (for commute analysis)
 TRAVELTIME_APP_ID=your_app_id
 TRAVELTIME_API_KEY=your_api_key
 
@@ -101,6 +141,123 @@ TELEGRAM_CHAT_ID=your_chat_id
 2. **TravelTime API**: Sign up at [TravelTime Developer Portal](https://account.traveltime.com/signup)
 3. **Telegram Bot**: Create via [@BotFather](https://t.me/botfather) on Telegram
 
+### Advanced Configuration Files
+
+HomeHunt supports YAML and JSON configuration files for complex search strategies. Create a template:
+
+```bash
+python -m homehunt init-config --output my-searches.yaml
+```
+
+**Example Configuration:**
+
+```yaml
+name: "My Property Searches"
+description: "Multi-location searches with commute filtering"
+
+# Global settings
+concurrent_searches: 3
+save_to_database: true
+deduplicate_across_profiles: true
+
+# Search profiles
+profiles:
+  - name: "family_homes"
+    description: "Family-friendly homes with gardens"
+    search:
+      location: "SW1A 1AA"
+      portals: ["rightmove", "zoopla"]
+      min_bedrooms: 2
+      max_bedrooms: 4
+      min_price: 2000
+      max_price: 4000
+      property_types: ["house", "maisonette"]
+      furnished: "any"
+      parking: true
+      garden: true
+      radius: 1.5
+      sort_order: "price_asc"
+      max_results: 50
+    
+    # Multi-location search
+    multi_location:
+      name: "South London Areas"
+      locations: ["Clapham", "Battersea", "Wandsworth"]
+      combine_results: true
+      max_results_per_location: 20
+      location_overrides:
+        "Clapham":
+          max_price: 4500
+        "Battersea":
+          min_price: 2500
+    
+    # Commute filtering
+    commute_filters:
+      - destination: "Canary Wharf"
+        max_time: 45
+        transport_modes: ["public_transport"]
+        departure_times: ["08:00", "09:00"]
+        weight: 1.0
+      - destination: "King's Cross"
+        max_time: 35
+        transport_modes: ["public_transport", "cycling"]
+        departure_times: ["08:30"]
+        weight: 0.8
+    
+    # Property scoring
+    enable_scoring: true
+    score_weights:
+      price: 0.3      # Lower price = higher score
+      commute: 0.4    # Shorter commute = higher score  
+      size: 0.2       # More bedrooms = higher score
+      features: 0.1   # More features = higher score
+    
+    # Auto-export
+    auto_export: true
+    export_formats: ["csv", "json"]
+    export_path: "./exports/family_homes"
+
+  - name: "budget_flats"
+    description: "Budget-friendly flats for young professionals"
+    search:
+      location: "E14"
+      portals: ["rightmove"]
+      min_bedrooms: 1
+      max_bedrooms: 2
+      max_price: 2500
+      property_types: ["flat"]
+      furnished: "furnished"
+      radius: 2.0
+      sort_order: "price_asc"
+    
+    commute_filters:
+      - destination: "Liverpool Street"
+        max_time: 30
+        transport_modes: ["public_transport"]
+    
+    enable_scoring: true
+    score_weights:
+      price: 0.6
+      commute: 0.3
+      features: 0.1
+
+# Global commute filters (applied to all profiles)
+global_commute_filters:
+  - destination: "Central London"
+    max_time: 60
+    transport_modes: ["public_transport"]
+```
+
+**Configuration Features:**
+
+- **Multi-Profile Searches**: Define multiple search strategies in one file
+- **Multi-Location Support**: Search multiple areas with location-specific parameters
+- **Commute Filtering**: Filter properties by commute time to multiple destinations
+- **Property Scoring**: Rank properties based on customizable criteria weights
+- **Auto-Export**: Automatically export results to CSV, JSON, or Google Sheets
+- **Concurrent Execution**: Control parallel search execution
+- **Global Settings**: Apply filters and settings across all profiles
+
 ## 🏗️ Architecture
 
 ### Project Structure
@@ -110,8 +267,14 @@ homehunt/
 ├── cli/                     # Command line interface
 │   ├── app.py              # Typer CLI commands
 │   ├── config.py           # Search configuration models
+│   ├── config_commands.py  # Configuration-driven search commands
 │   ├── search_command.py   # Async search implementation
 │   └── url_builder.py      # Portal-specific URL generators
+├── config/                  # Advanced configuration system
+│   ├── models.py           # Configuration data models
+│   ├── parser.py           # YAML/JSON parser with validation
+│   ├── manager.py          # Configuration management
+│   └── executor.py         # Configuration execution engine
 ├── core/                    # Core functionality
 │   ├── models.py           # Pydantic data models
 │   └── db.py               # SQLModel database layer
@@ -120,6 +283,10 @@ homehunt/
 │   ├── firecrawl.py       # Fire Crawl API integration
 │   ├── direct_http.py     # Direct HTTP scraper
 │   └── hybrid.py          # Hybrid scraper coordinator
+├── traveltime/             # Commute analysis
+│   ├── client.py          # TravelTime API client
+│   ├── models.py          # Commute data models
+│   └── service.py         # Commute filtering service
 └── utils/                  # Utility functions
 ```
 
@@ -162,13 +329,15 @@ mypy homehunt/
 ### Running Tests
 
 ```bash
-# All tests (42 scraper tests + 33 CLI tests)
+# All tests (85+ tests across all modules)
 pytest
 
 # Specific test modules
-pytest tests/scrapers/  # Scraper functionality
-pytest tests/cli/       # CLI functionality
-pytest tests/core/      # Core data models
+pytest tests/scrapers/     # Scraper functionality
+pytest tests/cli/          # CLI functionality
+pytest tests/core/         # Core data models
+pytest tests/traveltime/   # Commute analysis
+pytest tests/config/       # Configuration system
 
 # With verbose output
 pytest -v
@@ -183,13 +352,15 @@ pytest --cov=homehunt --cov-report=html
 
 - [x] **Phase 0**: Project Setup & Environment
 - [x] **Phase 1**: Core Data Layer (PropertyListing, Database)
-- [x] **Phase 2**: Hybrid Scraper Implementation
+- [x] **Phase 2**: Hybrid Scraper Implementation  
 - [x] **Phase 3**: CLI Integration with Rich Interface
+- [x] **Phase 4**: TravelTime Integration (commute analysis)
+- [x] **Phase 5A**: Advanced Configuration (YAML/JSON config files)
 
-### 🚧 Upcoming Phases
+### 🚧 Current Development
 
-- [ ] **Phase 4**: TravelTime Integration (commute analysis)
-- [ ] **Phase 5**: Advanced Features (Telegram alerts, exports)
+- [ ] **Phase 5B**: Export Integration (Google Sheets sync, enhanced exports)
+- [ ] **Phase 5C**: Telegram Bot (real-time alerts, monitoring service)
 
 ### 📈 Validated Performance
 
