@@ -332,7 +332,8 @@ def test_sheets_connection(
             console.print("[cyan]Testing Google Sheets connection...[/cyan]")
             
             # Test by creating a temporary spreadsheet
-            test_title = f"HomeHunt Connection Test {console._get_datetime().strftime('%Y%m%d_%H%M%S')}"
+            from datetime import datetime
+            test_title = f"HomeHunt Connection Test {datetime.now().strftime('%Y%m%d_%H%M%S')}"
             spreadsheet_id = await client.create_spreadsheet(test_title)
             
             console.print(f"[green]✓ Connection successful![/green]")
