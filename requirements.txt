@@ -24,3 +24,5 @@ ruff==0.6.9
 # Web scraping dependencies
 beautifulsoup4==4.12.3
 lxml==5.3.0
+# Configuration file support
+pyyaml==6.0.2

@@ -21,6 +21,7 @@ from homehunt.traveltime.service import TravelTimeService
 
 from .config import FurnishedType, LetType, SearchConfig, SortOrder
 from .search_command import search_properties
+from .config_commands import init_config, list_configs, run_config, show_config
 
 # Initialize Typer app
 app = typer.Typer(
@@ -442,6 +443,13 @@ def commute(
     except Exception as e:
         console.print(f"[red]Error during commute analysis: {e}[/red]")
         raise typer.Exit(1)
+
+
+# Configuration commands
+app.command(name="run-config")(run_config)
+app.command(name="init-config")(init_config)
+app.command(name="list-configs")(list_configs)
+app.command(name="show-config")(show_config)
 
 
 @app.callback()
