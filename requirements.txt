@@ -12,7 +12,7 @@ gspread-pandas==3.3.0
 pandas==2.2.3
 anyio==4.6.2
 aiosqlite==0.20.0
-firecrawl-py==0.0.19
+firecrawl-py==2.15.0
 pydantic-settings==2.5.2
 # Additional dependencies for core data layer
 sqlalchemy[asyncio]==2.0.23

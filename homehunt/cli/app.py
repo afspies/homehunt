@@ -457,6 +457,10 @@ def callback():
 
 def main():
     """Main entry point for CLI"""
+    # Load environment variables
+    from dotenv import load_dotenv
+    load_dotenv()
+    
     app()
 
 

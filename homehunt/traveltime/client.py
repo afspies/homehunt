@@ -135,12 +135,21 @@ class TravelTimeClient:
             # Build departure searches for each transport mode
             departure_searches = []
             
+            # Get origin IDs for arrival locations
+            arrival_location_ids = [origin_id for origin_id, _, _ in origins]
+            
             for mode in transport_modes:
+                # Convert departure time to ISO format
+                from datetime import datetime, timezone
+                today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+                iso_departure_time = f"{today}T{departure_time}:00Z"
+                
                 search_config = {
                     "id": f"commute_{mode}",
-                    "coords": {"lat": dest_lat, "lng": dest_lng},
+                    "departure_location_id": dest_id,
+                    "arrival_location_ids": arrival_location_ids,
                     "transportation": {"type": mode},
-                    "departure_time": departure_time,
+                    "departure_time": iso_departure_time,
                     "travel_time": max_travel_time,
                     "properties": ["travel_time"]
                 }
