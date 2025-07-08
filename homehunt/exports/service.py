@@ -252,7 +252,8 @@ class ExportService:
         for prop in properties:
             # Convert property to dict
             data = {
-                'id': prop.id,
+                'property_id': prop.property_id,
+                'uid': prop.uid,
                 'url': prop.url,
                 'title': prop.title,
                 'price': prop.price,

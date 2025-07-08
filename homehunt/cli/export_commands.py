@@ -67,9 +67,8 @@ async def run_export_operation(
             config_kwargs["output_path"] = output
             
         elif format == ExportFormat.GOOGLE_SHEETS:
-            if not service_account and not spreadsheet_id:
-                console.print("[red]Error: Either --service-account or --spreadsheet-id is required for Google Sheets export[/red]")
-                return
+            # Allow using application default credentials if neither service_account nor spreadsheet_id provided
+            pass
             
             # Build Google Sheets config
             sheets_config_kwargs = {
