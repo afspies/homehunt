@@ -308,6 +308,11 @@ def extract_coordinates_from_maps_embed(html_content: str) -> Optional[tuple[flo
     """
     Extract coordinates from embedded map iframes, scripts, and image URLs
     
+    Supports multiple coordinate formats:
+    - Zoopla JSON: "location":{"coordinates":{"latitude":51.4933,"longitude":-0.131788}}
+    - Rightmove map images: latitude=51.49681&longitude=-0.13456
+    - Google Maps embeds and JavaScript patterns
+    
     Args:
         html_content: HTML content containing map embeds
         
@@ -327,8 +332,23 @@ def extract_coordinates_from_maps_embed(html_content: str) -> Optional[tuple[flo
         r'src=["\']https://media\.rightmove\.co\.uk/map/_generate[^"\']*[?&]latitude=(-?\d+\.?\d*)[^"\']*[?&]longitude=(-?\d+\.?\d*)',
     ]
     
-    # Zoopla map patterns
-    zoopla_patterns = [
+    # Zoopla coordinate patterns (JSON format in page source - highest priority for Zoopla)
+    zoopla_json_patterns = [
+        # Primary Zoopla format: "location":{"coordinates":{"latitude":51.4933,"longitude":-0.131788}
+        r'"location"\s*:\s*\{\s*"coordinates"\s*:\s*\{\s*"latitude"\s*:\s*(-?\d+\.?\d*)\s*,\s*"longitude"\s*:\s*(-?\d+\.?\d*)',
+        # Nested coordinates: "coordinates":{"latitude":51.4933,"longitude":-0.131788}
+        r'"coordinates"\s*:\s*\{\s*"latitude"\s*:\s*(-?\d+\.?\d*)\s*,\s*"longitude"\s*:\s*(-?\d+\.?\d*)',
+        # Direct lat/lng in JSON: "latitude":51.4933,"longitude":-0.131788
+        r'"latitude"\s*:\s*(-?\d+\.?\d*)\s*,\s*"longitude"\s*:\s*(-?\d+\.?\d*)',
+        # Alternative order: "longitude":-0.131788,"latitude":51.4933
+        r'"longitude"\s*:\s*(-?\d+\.?\d*)\s*,\s*"latitude"\s*:\s*(-?\d+\.?\d*)',
+        # Compact format without quotes: latitude:51.4933,longitude:-0.131788
+        r'latitude\s*:\s*(-?\d+\.?\d*)\s*,\s*longitude\s*:\s*(-?\d+\.?\d*)',
+        r'longitude\s*:\s*(-?\d+\.?\d*)\s*,\s*latitude\s*:\s*(-?\d+\.?\d*)',
+    ]
+    
+    # Zoopla map URL patterns (fallback)
+    zoopla_url_patterns = [
         r'https://[^"\']*zoopla[^"\']*[?&]lat=(-?\d+\.?\d*)[^"\']*[?&]lng=(-?\d+\.?\d*)',
         r'src=["\']https://[^"\']*zoopla[^"\']*[?&]lat=(-?\d+\.?\d*)[^"\']*[?&]lng=(-?\d+\.?\d*)',
     ]
@@ -348,15 +368,25 @@ def extract_coordinates_from_maps_embed(html_content: str) -> Optional[tuple[flo
         r'center\s*:\s*\{\s*lat\s*:\s*(-?\d+\.?\d*)\s*,\s*lng\s*:\s*(-?\d+\.?\d*)\s*\}',
     ]
     
-    # Try patterns in order of reliability (Rightmove maps are most accurate)
-    all_patterns = rightmove_patterns + zoopla_patterns + google_patterns + script_patterns
+    # Try patterns in order of reliability 
+    # Zoopla JSON first (most reliable for Zoopla), then Rightmove maps (most reliable for Rightmove)
+    all_patterns = zoopla_json_patterns + rightmove_patterns + zoopla_url_patterns + google_patterns + script_patterns
     
-    for pattern in all_patterns:
+    for pattern_idx, pattern in enumerate(all_patterns):
         matches = re.findall(pattern, content, re.IGNORECASE)
         for match in matches:
             try:
-                lat = float(match[0])
-                lng = float(match[1])
+                # Handle longitude/latitude order reversal for specific patterns
+                # Check if this is a longitude-first pattern (patterns 3 and 5 in zoopla_json_patterns)
+                longitude_first_patterns = {3, 5}  # Indices of patterns that capture longitude first
+                if pattern_idx in longitude_first_patterns:
+                    # For patterns that capture longitude first, then latitude
+                    lng = float(match[0])
+                    lat = float(match[1])
+                else:
+                    # Standard order: latitude first, then longitude
+                    lat = float(match[0])
+                    lng = float(match[1])
                 
                 # Validate coordinate ranges for UK
                 if 49.5 <= lat <= 61.0 and -8.5 <= lng <= 2.0:
