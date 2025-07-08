@@ -16,6 +16,8 @@ from rich.table import Table
 
 from homehunt.core.db import Database, init_db
 from homehunt.core.models import Portal, PropertyType
+from homehunt.traveltime.client import TravelTimeClient
+from homehunt.traveltime.service import TravelTimeService
 
 from .config import FurnishedType, LetType, SearchConfig, SortOrder
 from .search_command import search_properties
@@ -311,6 +313,134 @@ def cleanup(
         asyncio.run(run_cleanup())
     except Exception as e:
         console.print(f"[red]Error during cleanup: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command()
+def commute(
+    destination: str = typer.Argument(..., help="Commute destination (address or postcode)"),
+    max_time: int = typer.Option(45, "--max-time", help="Maximum commute time in minutes"),
+    transport: str = typer.Option("public_transport", "--transport", help="Transport mode (public_transport/cycling/walking/driving)"),
+    departure_time: str = typer.Option("08:00", "--departure", help="Departure time (HH:MM format)"),
+    limit: int = typer.Option(50, "--limit", help="Maximum properties to analyze"),
+    update_all: bool = typer.Option(False, "--update-all", help="Update commute times for all properties"),
+):
+    """
+    Analyze commute times for properties in database
+    
+    Examples:
+        homehunt commute "Canary Wharf" --max-time 30 --transport public_transport
+        homehunt commute "King's Cross Station" --transport cycling --max-time 20
+        homehunt commute "EC2A 1AA" --update-all --departure 09:00
+    """
+    async def analyze_commutes():
+        # Initialize services
+        db = Database()
+        
+        try:
+            traveltime_client = TravelTimeClient()
+        except ValueError as e:
+            console.print(f"[red]TravelTime API error: {e}[/red]")
+            console.print("Please set TRAVELTIME_APP_ID and TRAVELTIME_API_KEY environment variables")
+            return
+        
+        traveltime_service = TravelTimeService(db, traveltime_client)
+        
+        # Validate transport mode
+        valid_modes = ["public_transport", "cycling", "walking", "driving"]
+        if transport not in valid_modes:
+            console.print(f"[red]Invalid transport mode: {transport}[/red]")
+            console.print(f"Valid options: {', '.join(valid_modes)}")
+            return
+        
+        # Get properties from database
+        if update_all:
+            properties = await db.search_properties(limit=1000)  # Get all properties
+        else:
+            properties = await db.search_properties(limit=limit)
+        
+        if not properties:
+            console.print("[yellow]No properties found in database[/yellow]")
+            console.print("Run a search first: homehunt search \"your location\"")
+            return
+        
+        console.print(f"[cyan]Found {len(properties)} properties to analyze[/cyan]")
+        
+        # Analyze commute times
+        transport_modes = [transport] if not update_all else ["public_transport", "cycling"]
+        commute_results = await traveltime_service.analyze_property_commutes(
+            properties=properties,
+            destination_address=destination,
+            transport_modes=transport_modes,
+            departure_time=departure_time
+        )
+        
+        # Filter properties by max commute time
+        filtered_properties = await traveltime_service.filter_by_commute(
+            properties=properties,
+            max_commute_time=max_time,
+            transport_mode=transport
+        )
+        
+        if not filtered_properties:
+            console.print(f"[yellow]No properties found within {max_time} minutes by {transport}[/yellow]")
+            return
+        
+        # Display results
+        console.print(f"\n[green]Found {len(filtered_properties)} properties within {max_time} minutes[/green]")
+        
+        # Create results table
+        table = Table(title=f"\nProperties within {max_time}min by {transport.replace('_', ' ')}")
+        table.add_column("Portal", style="cyan", width=10)
+        table.add_column("Price", justify="right", width=12)
+        table.add_column("Beds", justify="center", width=5)
+        table.add_column("Area", width=20)
+        table.add_column("Commute", justify="right", width=10)
+        table.add_column("Address", width=40)
+        
+        # Sort by commute time
+        sorted_properties = sorted(
+            filtered_properties,
+            key=lambda p: getattr(p, f"commute_{transport}") or 999
+        )
+        
+        for prop in sorted_properties[:20]:  # Show top 20
+            commute_time = getattr(prop, f"commute_{transport}")
+            commute_str = f"{commute_time}min" if commute_time else "N/A"
+            
+            table.add_row(
+                prop.portal.value.title(),
+                prop.price or "N/A",
+                str(prop.bedrooms or "-"),
+                prop.area or "-",
+                commute_str,
+                (prop.address or "-")[:40]
+            )
+        
+        console.print(table)
+        
+        # Show commute statistics
+        stats = await traveltime_service.get_commute_statistics(
+            filtered_properties, [transport]
+        )
+        
+        mode_stats = stats.get(transport, {})
+        if mode_stats.get("count", 0) > 0:
+            console.print(f"\n[bold]Commute Statistics ({transport.replace('_', ' ')}):[/bold]")
+            console.print(f"  Properties analyzed: {mode_stats['count']}")
+            console.print(f"  Shortest commute: {mode_stats['min']}min")
+            console.print(f"  Longest commute: {mode_stats['max']}min")
+            console.print(f"  Average commute: {mode_stats['avg']:.1f}min")
+        
+        await db.close()
+    
+    try:
+        asyncio.run(analyze_commutes())
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Commute analysis cancelled by user[/yellow]")
+        raise typer.Exit(0)
+    except Exception as e:
+        console.print(f"[red]Error during commute analysis: {e}[/red]")
         raise typer.Exit(1)
 
 
