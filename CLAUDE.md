@@ -77,6 +77,7 @@ pip install -r requirements.txt
 - ✅ Phase 3: CLI Integration with Rich Interface completed
 - ✅ Phase 4: TravelTime Integration completed (commute analysis)
 - ✅ Phase 5A: Advanced Configuration completed (YAML/JSON config files)
+- ✅ Phase 5B: Export Integration completed (Google Sheets sync, CSV/JSON exports)
 
 ## Completed Features
 ### Core System
@@ -90,7 +91,8 @@ pip install -r requirements.txt
 - **Configuration System**: YAML/JSON files for complex search strategies
 - **Multi-Location Searches**: Search multiple areas with location-specific parameters
 - **Property Scoring**: Customizable ranking based on price, commute, size, features
-- **Auto-Export**: CSV/JSON export with configurable formats
+- **Export Integration**: CSV/JSON/Google Sheets export with application default credentials
+- **Export Templates**: Predefined export configurations for common use cases
 
 ### CLI Commands
 - `search` - Basic property searches with filtering
@@ -102,6 +104,12 @@ pip install -r requirements.txt
 - `stats` - Database statistics
 - `list` - List saved properties
 - `cleanup` - Database maintenance
+- `export-csv` - Export properties to CSV files
+- `export-json` - Export properties to JSON files  
+- `export-sheets` - Export properties to Google Sheets
+- `export-status` - Show database and export status
+- `export-templates` - List available export templates
+- `test-sheets` - Test Google Sheets API connection
 
 ## Validated Performance
 - **Rightmove**: 100% success rate with direct HTTP scraping
@@ -110,16 +118,32 @@ pip install -r requirements.txt
 - **Cost Optimization**: 90% reduction in API costs vs. Fire Crawl-only approach
 - **TravelTime Integration**: Real API tested and working with user credentials
 - **Configuration System**: Comprehensive YAML/JSON support with validation
+- **Export Integration**: Google Sheets API tested with application default credentials
 
 ## Next Implementation Phases
-- Phase 5B: Export Integration (Google Sheets sync, enhanced exports)
 - Phase 5C: Telegram Bot (real-time alerts, monitoring service)
+
+## Current Issues to Address
+- PropertyListing model missing fields: latitude, longitude, parking, garden, balcony, pets_allowed, let_type, is_active
+- Need to improve property data extraction for missing fields
+- See FIXES_AND_TODOS.md for comprehensive improvement roadmap
 
 ## API Keys Required
 - ✅ Fire Crawl API (implemented and tested)
 - ✅ TravelTime API (implemented and tested)
+- ✅ Google Sheets API (application default credentials - implemented and tested)
 - 🚧 Telegram Bot Token (for Phase 5C)
-- 🚧 Google Sheets Service Account (for Phase 5B)
+
+## Authentication Setup
+### Google Sheets (Preferred Method)
+```bash
+# Install gcloud CLI and authenticate
+gcloud auth application-default login --scopes=https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/spreadsheets,https://www.googleapis.com/auth/drive.file
+gcloud auth application-default set-quota-project YOUR_PROJECT_ID
+
+# Test connection
+python -m homehunt test-sheets
+```
 
 ## Remember
 - Commit after EVERY completed todo

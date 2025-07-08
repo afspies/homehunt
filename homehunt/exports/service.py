@@ -250,13 +250,14 @@ class ExportService:
         formatted_properties = []
         
         for prop in properties:
-            # Convert property to dict
+            # Convert property to dict - only use fields that actually exist
             data = {
                 'property_id': prop.property_id,
                 'uid': prop.uid,
                 'url': prop.url,
                 'title': prop.title,
                 'price': prop.price,
+                'price_numeric': prop.price_numeric,
                 'bedrooms': prop.bedrooms,
                 'bathrooms': prop.bathrooms,
                 'property_type': prop.property_type.value if prop.property_type else None,
@@ -264,19 +265,17 @@ class ExportService:
                 'area': prop.area,
                 'address': prop.address,
                 'description': prop.description,
-                'features': prop.features,
-                'latitude': prop.latitude,
-                'longitude': prop.longitude,
-                'postcode': prop.postcode,
-                'parking': prop.parking,
-                'garden': prop.garden,
-                'balcony': prop.balcony,
-                'pets_allowed': prop.pets_allowed,
-                'furnished': prop.furnished.value if prop.furnished else None,
-                'let_type': prop.let_type.value if prop.let_type else None,
-                'first_seen': prop.first_scraped.strftime(config.date_format) if prop.first_scraped else None,
+                'features': ', '.join(prop.features) if prop.features else None,
+                'furnished': prop.furnished,
+                'available_date': prop.available_date,
+                'agent_name': prop.agent_name,
+                'agent_phone': prop.agent_phone,
+                'extraction_method': prop.extraction_method.value,
+                'content_length': prop.content_length,
+                'images': ', '.join(prop.images) if prop.images else None,
+                'first_seen': prop.first_seen.strftime(config.date_format) if prop.first_seen else None,
                 'last_seen': prop.last_scraped.strftime(config.date_format) if prop.last_scraped else None,
-                'is_active': prop.is_active,
+                'scrape_count': prop.scrape_count,
             }
             
             # Add commute data if available

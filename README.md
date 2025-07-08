@@ -116,6 +116,28 @@ python -m homehunt list --limit 20 --min-price 1500 --beds 2
 python -m homehunt cleanup --days 30
 ```
 
+### Data Export
+
+```bash
+# Export to CSV
+python -m homehunt export-csv --output properties.csv
+python -m homehunt export-csv --include title,price,bedrooms,area --portal rightmove
+
+# Export to JSON
+python -m homehunt export-json --output properties.json
+
+# Export to Google Sheets (uses application default credentials)
+python -m homehunt export-sheets --sheet-name "HomeHunt Properties" --share your-email@gmail.com
+python -m homehunt export-sheets --include title,price,bedrooms --portal zoopla --share user@example.com
+
+# Test Google Sheets connection
+python -m homehunt test-sheets
+
+# View export templates and status
+python -m homehunt export-templates
+python -m homehunt export-status
+```
+
 ## ⚙️ Configuration
 
 ### API Keys
@@ -139,7 +161,45 @@ TELEGRAM_CHAT_ID=your_chat_id
 
 1. **Fire Crawl API**: Sign up at [Fire Crawl](https://firecrawl.dev)
 2. **TravelTime API**: Sign up at [TravelTime Developer Portal](https://account.traveltime.com/signup)
-3. **Telegram Bot**: Create via [@BotFather](https://t.me/botfather) on Telegram
+3. **Google Sheets API**: Enable APIs and authenticate (see Google Sheets Setup below)
+4. **Telegram Bot**: Create via [@BotFather](https://t.me/botfather) on Telegram
+
+### Google Sheets Setup
+
+HomeHunt uses **Application Default Credentials** for Google Sheets integration (recommended approach):
+
+#### Prerequisites
+1. **Create Google Cloud Project** or use existing one
+2. **Enable APIs** in Google Cloud Console:
+   - Google Sheets API
+   - Google Drive API
+
+#### Authentication Setup
+```bash
+# Install Google Cloud CLI if not already installed
+# macOS: brew install google-cloud-sdk
+# Or download from: https://cloud.google.com/sdk/docs/install
+
+# Authenticate with your Google account (includes required scopes)
+gcloud auth application-default login --scopes=https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/spreadsheets,https://www.googleapis.com/auth/drive.file
+
+# Set your project as quota project (replace YOUR_PROJECT_ID)
+gcloud auth application-default set-quota-project YOUR_PROJECT_ID
+
+# Test the connection
+python -m homehunt test-sheets
+```
+
+#### Alternative: Service Account (Corporate Environments)
+If your organization requires service accounts:
+
+```bash
+# Download service account JSON from Google Cloud Console
+# Then test with:
+python -m homehunt test-sheets /path/to/service-account.json
+```
+
+**Note**: Many corporate environments block service account key creation. Application Default Credentials is the preferred and more secure approach.
 
 ### Advanced Configuration Files
 
