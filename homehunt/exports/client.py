@@ -64,7 +64,17 @@ class GoogleSheetsClient:
                     scopes=self.SCOPES
                 )
             else:
-                raise GoogleSheetsError("No service account credentials provided")
+                # Try application default credentials as fallback
+                try:
+                    from google.auth import default
+                    self._credentials, _ = default(scopes=self.SCOPES)
+                    console.print("[blue]Using application default credentials[/blue]")
+                except Exception as e:
+                    raise GoogleSheetsError(
+                        "No service account credentials provided. "
+                        "Either provide service_account_file/service_account_info "
+                        "or run 'gcloud auth application-default login'"
+                    )
                 
             return self._credentials
             

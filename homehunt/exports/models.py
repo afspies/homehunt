@@ -52,9 +52,10 @@ class GoogleSheetsConfig(BaseModel):
         return v
     
     def model_post_init(self, __context) -> None:
-        """Validate that either service_account_file or service_account_info is provided"""
-        if not self.service_account_file and not self.service_account_info:
-            raise ValueError("Either service_account_file or service_account_info must be provided")
+        """Validate credentials configuration"""
+        # Allow empty config to use application default credentials
+        # This is useful when using gcloud auth application-default login
+        pass
 
 
 class ExportConfig(BaseModel):

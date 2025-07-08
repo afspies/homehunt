@@ -306,13 +306,14 @@ def export_status():
 
 
 def test_sheets_connection(
-    service_account: Path = typer.Argument(..., help="Service account JSON file path"),
+    service_account: Optional[Path] = typer.Argument(None, help="Service account JSON file path (optional if using gcloud auth)"),
 ):
     """
     Test Google Sheets API connection
     
     Examples:
-        homehunt test-sheets-connection credentials.json
+        homehunt test-sheets credentials.json
+        homehunt test-sheets  # Uses gcloud application default credentials
     """
     async def test_connection():
         try:
@@ -320,10 +321,11 @@ def test_sheets_connection(
             from homehunt.exports.models import GoogleSheetsConfig
             
             # Create test configuration
-            config = GoogleSheetsConfig(
-                service_account_file=service_account,
-                sheet_name="Test"
-            )
+            config_kwargs = {"sheet_name": "Test"}
+            if service_account:
+                config_kwargs["service_account_file"] = service_account
+            
+            config = GoogleSheetsConfig(**config_kwargs)
             
             client = GoogleSheetsClient(config)
             
