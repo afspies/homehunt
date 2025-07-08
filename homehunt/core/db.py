@@ -429,10 +429,25 @@ class Database:
                     ).where(Listing.price_numeric.is_not(None))
                 )
 
+                portal_results = portal_stats.fetchall()
+                price_result = price_stats.first()
+                
                 return {
-                    "portal_stats": [dict(row) for row in portal_stats],
+                    "portal_stats": [
+                        {
+                            "portal": row[0].value if hasattr(row[0], 'value') else str(row[0]),
+                            "total": row[1],
+                            "with_price": row[2],
+                            "avg_price": row[3]
+                        }
+                        for row in portal_results
+                    ],
                     "recent_activity": recent_activity.scalar(),
-                    "price_stats": dict(price_stats.first()),
+                    "price_stats": {
+                        "min_price": price_result[0] if price_result else None,
+                        "max_price": price_result[1] if price_result else None,
+                        "avg_price": price_result[2] if price_result else None,
+                    } if price_result else {},
                     "last_updated": datetime.utcnow().isoformat(),
                 }
 
