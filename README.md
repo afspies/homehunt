@@ -19,6 +19,7 @@ A powerful async Python CLI tool that automates property search across Rightmove
 - **🗺️ Mapping Support**: Property coordinates for distance calculations and mapping
 - **⚡ Async Architecture**: High-performance concurrent operations throughout
 - **🎯 Advanced Filtering**: Price, bedrooms, property type, location radius, features, and more
+- **🤖 Telegram Bot Integration**: Real-time property alerts and continuous monitoring via Telegram
 
 ## 🚀 Quick Start
 
@@ -144,6 +145,32 @@ python -m homehunt test-sheets
 python -m homehunt export-templates
 python -m homehunt export-status
 ```
+
+### 🤖 Telegram Bot Integration
+
+Get real-time property alerts and continuous monitoring via Telegram:
+
+```bash
+# Interactive bot setup
+python -m homehunt bot-setup
+
+# Test bot connection
+python -m homehunt bot-test --config my-bot-config.yaml
+
+# Start continuous monitoring (checks every 5 minutes)
+python -m homehunt bot-start my-bot-config.yaml
+
+# Check bot status
+python -m homehunt bot-status my-bot-config.yaml
+```
+
+**Quick Setup:**
+1. Create a bot with @BotFather on Telegram
+2. Get your chat ID by messaging the bot
+3. Configure HomeHunt with your credentials
+4. Start receiving instant property alerts!
+
+See [Telegram Bot Setup Guide](docs/telegram-bot-setup.md) for detailed instructions.
 
 ## ⚙️ Configuration
 

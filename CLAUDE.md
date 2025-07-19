@@ -81,6 +81,7 @@ pip install -r requirements.txt
 - ✅ Enhanced PropertyListing Model completed (parking, garden, balcony, pets, coordinates)
 - ✅ Intelligent Feature Extraction completed (AI-powered amenity parsing)
 - ✅ Geographic Data Enhancement completed (Rightmove map coordinate extraction)
+- ✅ Phase 5C: Telegram Bot Integration completed (real-time alerts, continuous monitoring)
 
 ## Completed Features
 ### Core System
@@ -99,6 +100,7 @@ pip install -r requirements.txt
 - **Feature Extraction**: Automatic parsing of parking, gardens, pet policies, amenities
 - **Geographic Enhancement**: GPS coordinates from Rightmove maps and embedded content
 - **Property Classification**: Intelligent categorization of rental types and amenities
+- **Telegram Bot Integration**: Real-time alerts, continuous monitoring, interactive commands
 
 ### CLI Commands
 - `search` - Basic property searches with filtering
@@ -116,6 +118,11 @@ pip install -r requirements.txt
 - `export-status` - Show database and export status
 - `export-templates` - List available export templates
 - `test-sheets` - Test Google Sheets API connection
+- `bot-setup` - Configure Telegram bot interactively
+- `bot-start` - Start continuous property monitoring
+- `bot-test` - Test Telegram bot connection
+- `bot-status` - Check bot configuration status
+- `bot-monitor` - Run monitoring in foreground
 
 ## Validated Performance
 - **Rightmove**: 100% success rate with direct HTTP scraping + coordinate extraction
@@ -129,7 +136,11 @@ pip install -r requirements.txt
 - **Export Integration**: Google Sheets API tested with application default credentials
 
 ## Next Implementation Phases
-- Phase 5C: Telegram Bot (real-time alerts, monitoring service)
+All major phases completed! Potential future enhancements:
+- Advanced bot features (user preferences, saved searches, analytics)
+- WhatsApp/SMS integration
+- Property image analysis
+- Historical price tracking and predictions
 
 ## Recent Enhancements Completed
 - ✅ Added missing PropertyListing fields: latitude, longitude, parking, garden, balcony, pets_allowed, let_type, is_active  
@@ -142,7 +153,7 @@ pip install -r requirements.txt
 - ✅ Fire Crawl API (implemented and tested)
 - ✅ TravelTime API (implemented and tested)
 - ✅ Google Sheets API (application default credentials - implemented and tested)
-- 🚧 Telegram Bot Token (for Phase 5C)
+- ✅ Telegram Bot Token (implemented with full bot integration)
 
 ## Authentication Setup
 ### Google Sheets (Preferred Method)
@@ -153,6 +164,22 @@ gcloud auth application-default set-quota-project YOUR_PROJECT_ID
 
 # Test connection
 python -m homehunt test-sheets
+```
+
+### Telegram Bot
+```bash
+# Create bot with @BotFather on Telegram
+# Get bot token and chat ID
+
+# Interactive setup
+python -m homehunt bot-setup
+
+# Or configure in YAML
+telegram_bot_token: "YOUR_BOT_TOKEN"
+telegram_chat_id: "YOUR_CHAT_ID"
+
+# Test bot
+python -m homehunt bot-test --config your-config.yaml
 ```
 
 ## Remember

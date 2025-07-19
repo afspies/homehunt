@@ -1,0 +1,116 @@
+# HomeHunt Telegram Bot Monitoring Configuration
+# This configuration enables continuous property monitoring with real-time alerts
+
+name: "Telegram Bot Monitoring"
+description: "Continuous property monitoring with Telegram alerts"
+version: "1.0"
+
+# Global notification settings - applies to all searches
+global_notifications:
+  enabled: true
+  # Get your bot token from @BotFather on Telegram
+  telegram_bot_token: "YOUR_BOT_TOKEN_HERE"
+  # Get your chat ID by messaging your bot and checking updates
+  telegram_chat_id: "YOUR_CHAT_ID_HERE"
+  
+  # Alert triggers
+  new_properties: true      # Alert on new property listings
+  price_changes: true       # Alert when prices drop
+  status_changes: false     # Alert when properties become unavailable
+  
+  # Alert frequency
+  immediate_alerts: true    # Send alerts as soon as properties are found
+  daily_summary: true      # Send daily summary at 9 AM
+  weekly_summary: false    # Send weekly report on Mondays
+
+# Search profiles - define what properties to monitor
+profiles:
+  # Example: Central London professional
+  - name: "Central London"
+    description: "1-2 bed flats in central London"
+    
+    search:
+      portals: [rightmove, zoopla]
+      location: "London"
+      radius: 2.0
+      min_price: 1200
+      max_price: 2500
+      min_bedrooms: 1
+      max_bedrooms: 2
+      property_types: [flat]
+      furnished: furnished
+      parking: false
+      garden: false
+      pets_allowed: false
+      sort_order: date_desc
+      max_results: 50
+    
+    # Commute filtering - only alert for properties with good commute
+    commute_filters:
+      - destination: "Liverpool Street Station"
+        max_time: 30
+        transport_modes: [public_transport]
+        departure_times: ["08:00"]
+        weight: 1.0
+    
+    # Profile-specific overrides (optional)
+    notifications:
+      enabled: true
+      immediate_alerts: true
+      daily_summary: false  # Override global setting
+  
+  # Example: Family home searcher
+  - name: "Family Homes"
+    description: "3+ bed houses with gardens"
+    
+    search:
+      portals: [rightmove, zoopla]
+      location: "Greater London"
+      radius: 5.0
+      min_price: 2000
+      max_price: 4000
+      min_bedrooms: 3
+      property_types: [house]
+      furnished: any
+      parking: true
+      garden: true
+      pets_allowed: true
+      sort_order: price_asc
+      max_results: 100
+    
+    # Multiple commute destinations
+    commute_filters:
+      - destination: "Canary Wharf"
+        max_time: 45
+        transport_modes: [public_transport, driving]
+        departure_times: ["07:30", "08:00"]
+      
+      - destination: "Kings Cross"
+        max_time: 40
+        transport_modes: [public_transport]
+        departure_times: ["08:30"]
+    
+    # Auto-export matching properties
+    auto_export: true
+    export_formats: [csv, google_sheets]
+    export_path: "~/homehunt/family_homes.csv"
+
+# Execution settings
+concurrent_searches: 2
+delay_between_searches: 2.0
+deduplicate_across_profiles: true
+save_to_database: true
+
+# Monitoring settings (for bot-start command)
+monitoring:
+  check_interval: 300  # Check every 5 minutes
+  quiet_hours:         # Don't send alerts during these hours (optional)
+    start: "23:00"
+    end: "07:00"
+  
+# Usage:
+# 1. Update bot token and chat ID with your values
+# 2. Customize search profiles for your needs
+# 3. Run: homehunt bot-setup --config configs/bot_monitoring.yaml
+# 4. Start monitoring: homehunt bot-start configs/bot_monitoring.yaml
+# 5. Or run one-time search: homehunt run-config configs/bot_monitoring.yaml

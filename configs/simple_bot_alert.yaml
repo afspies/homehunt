@@ -1,0 +1,57 @@
+# Simple Telegram Bot Alert Configuration
+# Minimal setup for getting started with property alerts
+
+name: "Simple Bot Alerts"
+version: "1.0"
+
+# Telegram bot settings
+global_notifications:
+  enabled: true
+  telegram_bot_token: "YOUR_BOT_TOKEN_HERE"
+  telegram_chat_id: "YOUR_CHAT_ID_HERE"
+  new_properties: true
+  immediate_alerts: true
+
+# Single search profile
+profiles:
+  - name: "My Property Search"
+    search:
+      portals: [rightmove, zoopla]
+      location: "E14"  # Canary Wharf area
+      radius: 1.0
+      max_price: 2000
+      min_bedrooms: 1
+      property_types: [flat]
+      furnished: furnished
+      max_results: 20
+    
+    # Optional: Only alert for properties within 30min commute
+    commute_filters:
+      - destination: "Bank Station"
+        max_time: 30
+        transport_modes: [public_transport]
+
+# Save all results to database for history
+save_to_database: true
+
+# Quick Start:
+# 1. Create a Telegram bot:
+#    - Message @BotFather on Telegram
+#    - Send /newbot and follow instructions
+#    - Copy the bot token
+#
+# 2. Get your chat ID:
+#    - Message your new bot
+#    - Visit: https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates
+#    - Find your chat ID in the response
+#
+# 3. Update this file with your token and chat ID
+#
+# 4. Test the bot:
+#    homehunt bot-test --config configs/simple_bot_alert.yaml
+#
+# 5. Run a search with alerts:
+#    homehunt run-config configs/simple_bot_alert.yaml
+#
+# 6. Start continuous monitoring:
+#    homehunt bot-start configs/simple_bot_alert.yaml
