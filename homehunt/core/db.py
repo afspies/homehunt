@@ -491,6 +491,31 @@ class Database:
             self.logger.error(f"Error getting statistics: {e}")
             return {}
 
+    async def get_properties_since(self, since_time: datetime) -> List["PropertyListing"]:
+        """
+        Get properties updated since a specific time
+        
+        Args:
+            since_time: Get properties updated after this time
+            
+        Returns:
+            List of PropertyListing objects
+        """
+        try:
+            async with self.async_session() as session:
+                result = await session.execute(
+                    select(Listing)
+                    .where(Listing.last_scraped >= since_time)
+                    .order_by(Listing.last_scraped.desc())
+                )
+                
+                listings = result.scalars().all()
+                return [listing.to_property_listing() for listing in listings]
+                
+        except Exception as e:
+            self.logger.error(f"Error getting properties since {since_time}: {e}")
+            return []
+
     async def cleanup_old_data(self, days: int = 30):
         """Remove old inactive properties"""
         try:

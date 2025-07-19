@@ -14,6 +14,7 @@ from rich.progress import Progress
 from homehunt.cli.search_command import search_properties
 from homehunt.core.db import Database
 from homehunt.core.models import PropertyListing
+from homehunt.core.alerts import AlertService
 from homehunt.traveltime.service import TravelTimeService
 from homehunt.traveltime.client import TravelTimeClient
 
@@ -40,6 +41,7 @@ class ConfigExecutor:
         self.config = config
         self.db: Optional[Database] = None
         self.traveltime_service: Optional[TravelTimeService] = None
+        self.alert_service: Optional[AlertService] = None
         self._initialize_services()
     
     def _initialize_services(self):
@@ -59,6 +61,10 @@ class ConfigExecutor:
                 self.traveltime_service = TravelTimeService(self.db or Database(), traveltime_client)
             except ValueError:
                 console.print("[yellow]Warning: TravelTime API not configured, skipping commute filtering[/yellow]")
+        
+        # Initialize alert service if notifications are enabled
+        if self.config.global_notifications and self.config.global_notifications.enabled:
+            self.alert_service = AlertService(self.db or Database())
     
     async def execute(
         self,
@@ -88,11 +94,19 @@ class ConfigExecutor:
             if dry_run:
                 return self._dry_run_summary(profiles_to_run)
             
+            # Initialize alert service if needed
+            if self.alert_service and self.config.global_notifications:
+                await self.alert_service.initialize(self.config.global_notifications)
+            
             # Execute searches
             all_properties = await self._execute_searches(profiles_to_run)
             
             # Apply global post-processing
             all_properties = await self._apply_global_processing(all_properties)
+            
+            # Send notifications for new properties
+            if self.alert_service and all_properties:
+                await self.alert_service.notify_new_properties(all_properties)
             
             # Update profile metadata
             await self._update_profile_metadata(profiles_to_run)
@@ -232,6 +246,15 @@ class ConfigExecutor:
         # Handle exports
         if profile.auto_export and profile.export_formats:
             await self._handle_exports(profile, properties)
+        
+        # Handle profile-specific notifications
+        if profile.notifications and profile.notifications.enabled and self.alert_service:
+            # Use profile-specific config if different from global
+            if profile.notifications != self.config.global_notifications:
+                profile_alert_service = AlertService(self.db or Database())
+                await profile_alert_service.initialize(profile.notifications)
+                await profile_alert_service.notify_new_properties(properties)
+            # Otherwise global alerts will handle it
         
         return properties
     
