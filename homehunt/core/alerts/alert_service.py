@@ -3,14 +3,19 @@ Alert service for managing property notifications
 Integrates with Telegram bot and monitoring service
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from structlog import get_logger
 
-from homehunt.config.models import NotificationConfig
-from homehunt.core.alerts.monitoring_service import MonitoringService
-from homehunt.core.alerts.telegram_bot import TelegramBot
 from homehunt.core.db import Database
 from homehunt.core.models import PropertyListing
+
+if TYPE_CHECKING:
+    from homehunt.config.models import NotificationConfig
+    from homehunt.core.alerts.monitoring_service import MonitoringService
+    from homehunt.core.alerts.telegram_bot import TelegramBot
 
 logger = get_logger()
 
@@ -20,6 +25,8 @@ class AlertService:
 
     def __init__(self, database: Database):
         """Initialize alert service"""
+        from homehunt.core.alerts.monitoring_service import MonitoringService
+        
         self.db = database
         self.monitoring_service = MonitoringService(database)
         self.bot: TelegramBot | None = None

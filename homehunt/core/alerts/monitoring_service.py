@@ -5,15 +5,18 @@ Tracks new properties, price changes, and sends alerts via Telegram
 
 import asyncio
 from datetime import datetime, timedelta
+from typing import TYPE_CHECKING
 
 from rich.console import Console
 from structlog import get_logger
 
-from homehunt.config.executor import ConfigExecutor
-from homehunt.config.models import AdvancedSearchConfig, NotificationConfig
-from homehunt.core.alerts.telegram_bot import TelegramBot
 from homehunt.core.db import Database
 from homehunt.core.models import PropertyListing
+
+if TYPE_CHECKING:
+    from homehunt.config.executor import ConfigExecutor
+    from homehunt.config.models import AdvancedSearchConfig, NotificationConfig
+    from homehunt.core.alerts.telegram_bot import TelegramBot
 
 logger = get_logger()
 console = Console()
@@ -25,10 +28,12 @@ class PropertyMonitor:
     def __init__(
         self,
         database: Database,
-        telegram_bot: TelegramBot | None = None,
-        config: NotificationConfig | None = None,
+        telegram_bot: "TelegramBot | None" = None,
+        config: "NotificationConfig | None" = None,
     ):
         """Initialize property monitor"""
+        from homehunt.config.models import NotificationConfig
+        
         self.db = database
         self.bot = telegram_bot
         self.config = config or NotificationConfig()
@@ -43,7 +48,7 @@ class PropertyMonitor:
     async def start_monitoring(
         self,
         check_interval: int = 300,  # 5 minutes
-        search_config: AdvancedSearchConfig | None = None,
+        search_config: "AdvancedSearchConfig | None" = None,
     ) -> None:
         """Start continuous monitoring loop"""
         self.is_running = True
@@ -180,8 +185,10 @@ class PropertyMonitor:
                 await self.bot.send_property_alert(property, alert_type=alert_type)
                 await asyncio.sleep(1)  # Rate limiting
 
-    async def _run_scheduled_searches(self, config: AdvancedSearchConfig) -> None:
+    async def _run_scheduled_searches(self, config: "AdvancedSearchConfig") -> None:
         """Run scheduled searches from configuration"""
+        from homehunt.config.executor import ConfigExecutor
+        
         # Check if any profiles have scheduled execution
         for profile in config.profiles:
             if profile.schedule_enabled and self._should_run_profile(profile):
@@ -270,10 +277,12 @@ class MonitoringService:
         """Initialize monitoring service"""
         self.db = database
         self.monitor: PropertyMonitor | None = None
-        self.bot: TelegramBot | None = None
+        self.bot: "TelegramBot | None" = None
 
-    async def initialize(self, config: NotificationConfig) -> None:
+    async def initialize(self, config: "NotificationConfig") -> None:
         """Initialize monitoring with configuration"""
+        from homehunt.core.alerts.telegram_bot import TelegramBot
+        
         if config.enabled and config.telegram_bot_token:
             # Create Telegram bot
             self.bot = TelegramBot(config)
@@ -295,7 +304,7 @@ class MonitoringService:
     async def start(
         self,
         check_interval: int = 300,
-        search_config: AdvancedSearchConfig | None = None,
+        search_config: "AdvancedSearchConfig | None" = None,
     ) -> None:
         """Start monitoring service"""
         if self.monitor:
