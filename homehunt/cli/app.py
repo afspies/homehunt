@@ -30,6 +30,7 @@ from .export_commands import (
     list_export_templates,
     test_sheets_connection,
 )
+from .bot_commands import app as bot_app
 
 # Initialize Typer app
 app = typer.Typer(
@@ -466,6 +467,9 @@ app.command(name="export-sheets")(export_sheets)
 app.command(name="export-status")(export_status)
 app.command(name="export-templates")(list_export_templates)
 app.command(name="test-sheets")(test_sheets_connection)
+
+# Bot commands
+app.add_typer(bot_app, name="bot", help="Telegram bot management")
 
 
 @app.callback()
