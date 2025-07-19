@@ -283,6 +283,7 @@ class FireCrawlScraper(BaseScraper):
                 "title": self._extract_title(markdown, html),
                 "images": self._extract_images(html),
                 "content_length": len(html),
+                "raw_content": html,  # Include for coordinate extraction
             })
             
             return data
@@ -319,6 +320,9 @@ class FireCrawlScraper(BaseScraper):
         postcode_match = re.search(r'([A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2})', markdown)
         if postcode_match:
             data["postcode"] = postcode_match.group(1)
+        
+        # Include raw HTML for coordinate extraction
+        data["raw_content"] = html
         
         return data
     
@@ -360,6 +364,9 @@ class FireCrawlScraper(BaseScraper):
         postcode_match = re.search(r'([A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2})', markdown)
         if postcode_match:
             data["postcode"] = postcode_match.group(1)
+        
+        # Include raw HTML for coordinate extraction
+        data["raw_content"] = html
         
         return data
     

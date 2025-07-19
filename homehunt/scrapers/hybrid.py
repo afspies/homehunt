@@ -7,6 +7,7 @@ Hybrid scraper coordinator implementing optimal cost/performance strategy
 
 import asyncio
 import logging
+import math
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Set, Tuple
 from urllib.parse import urlparse
@@ -170,9 +171,19 @@ class HybridScraper:
             
             for portal, urls in search_urls_dict.items():
                 for base_url in urls:
+                    # Calculate number of pages needed based on results per page
+                    if portal == Portal.RIGHTMOVE:
+                        results_per_page = 24
+                    else:  # Zoopla
+                        results_per_page = 25
+                    
+                    max_pages = math.ceil((config.max_results or 100) / results_per_page)
+                    # Limit to reasonable number of pages
+                    max_pages = min(max_pages, 10)
+                    
                     # Generate paginated URLs
                     paginated_urls = await self.firecrawl_scraper.get_pagination_urls(
-                        base_url, config.max_results or 100
+                        base_url, max_pages
                     )
                     search_urls.extend(paginated_urls)
             

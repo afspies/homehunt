@@ -174,6 +174,9 @@ class DirectHTTPScraper(BaseScraper):
             # Extract additional metadata
             data["content_length"] = len(str(soup))
             
+            # Include raw HTML for coordinate extraction
+            data["raw_content"] = str(soup)
+            
             return data
             
         except Exception as e:
@@ -222,6 +225,9 @@ class DirectHTTPScraper(BaseScraper):
         if location_match:
             location = location_match.group(1).strip()
             data["address"] = location
+        
+        # Include raw HTML for coordinate extraction
+        data["raw_content"] = html
         
         return data
     
