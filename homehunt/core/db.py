@@ -5,7 +5,7 @@ Database models and connection management for HomeHunt
 import json
 import logging
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
@@ -32,49 +32,51 @@ class Listing(SQLModel, table=True):
     url: str = Field(description="Direct property URL")
 
     # Location data
-    address: Optional[str] = Field(None, description="Property address")
-    postcode: Optional[str] = Field(None, index=True, description="Full postcode")
-    area: Optional[str] = Field(None, index=True, description="Area/district")
-    latitude: Optional[float] = Field(None, description="Property latitude coordinate")
-    longitude: Optional[float] = Field(None, description="Property longitude coordinate")
+    address: str | None = Field(None, description="Property address")
+    postcode: str | None = Field(None, index=True, description="Full postcode")
+    area: str | None = Field(None, index=True, description="Area/district")
+    latitude: float | None = Field(None, description="Property latitude coordinate")
+    longitude: float | None = Field(
+        None, description="Property longitude coordinate"
+    )
 
     # Property details
-    price: Optional[str] = Field(None, description="Raw price text")
-    price_numeric: Optional[int] = Field(
+    price: str | None = Field(None, description="Raw price text")
+    price_numeric: int | None = Field(
         None, index=True, description="Monthly rent in pence"
     )
-    bedrooms: Optional[int] = Field(None, index=True, description="Number of bedrooms")
-    bathrooms: Optional[int] = Field(None, description="Number of bathrooms")
-    property_type: Optional[PropertyType] = Field(
+    bedrooms: int | None = Field(None, index=True, description="Number of bedrooms")
+    bathrooms: int | None = Field(None, description="Number of bathrooms")
+    property_type: PropertyType | None = Field(
         None, index=True, description="Property type"
     )
 
     # Additional details
-    furnished: Optional[str] = Field(None, description="Furnished status")
-    available_date: Optional[str] = Field(None, description="Available from date")
-    description: Optional[str] = Field(None, description="Property description")
-    features: Optional[str] = Field(None, description="JSON array of features")
-    
+    furnished: str | None = Field(None, description="Furnished status")
+    available_date: str | None = Field(None, description="Available from date")
+    description: str | None = Field(None, description="Property description")
+    features: str | None = Field(None, description="JSON array of features")
+
     # Property amenities and features
-    parking: Optional[bool] = Field(None, description="Has parking space/garage")
-    garden: Optional[bool] = Field(None, description="Has garden/outdoor space")
-    balcony: Optional[bool] = Field(None, description="Has balcony/terrace")
-    pets_allowed: Optional[bool] = Field(None, description="Pets allowed")
-    
+    parking: bool | None = Field(None, description="Has parking space/garage")
+    garden: bool | None = Field(None, description="Has garden/outdoor space")
+    balcony: bool | None = Field(None, description="Has balcony/terrace")
+    pets_allowed: bool | None = Field(None, description="Pets allowed")
+
     # Rental details
-    let_type: Optional[LetType] = Field(None, description="Type of rental let")
+    let_type: LetType | None = Field(None, description="Type of rental let")
 
     # Agent information
-    agent_name: Optional[str] = Field(None, description="Estate agent name")
-    agent_phone: Optional[str] = Field(None, description="Agent contact number")
+    agent_name: str | None = Field(None, description="Estate agent name")
+    agent_phone: str | None = Field(None, description="Agent contact number")
 
     # Extraction metadata
     extraction_method: ExtractionMethod = Field(
         description="Method used for extraction"
     )
-    content_length: Optional[int] = Field(None, description="Raw content size")
-    title: Optional[str] = Field(None, description="Page title")
-    images: Optional[str] = Field(None, description="JSON array of image URLs")
+    content_length: int | None = Field(None, description="Raw content size")
+    title: str | None = Field(None, description="Page title")
+    images: str | None = Field(None, description="JSON array of image URLs")
 
     # Tracking and timestamps
     first_seen: datetime = Field(
@@ -86,19 +88,21 @@ class Listing(SQLModel, table=True):
         description="Last successful scrape",
     )
     scrape_count: int = Field(default=1, description="Number of times scraped")
-    is_active: bool = Field(default=True, index=True, description="Property is still available")
+    is_active: bool = Field(
+        default=True, index=True, description="Property is still available"
+    )
     status: str = Field(default="active", index=True, description="Property status")
 
     # Commute analysis
-    commute_public_transport: Optional[int] = Field(
+    commute_public_transport: int | None = Field(
         None, description="Public transport time in minutes"
     )
-    commute_cycling: Optional[int] = Field(None, description="Cycling time in minutes")
-    commute_walking: Optional[int] = Field(None, description="Walking time in minutes")
-    commute_driving: Optional[int] = Field(None, description="Driving time in minutes")
+    commute_cycling: int | None = Field(None, description="Cycling time in minutes")
+    commute_walking: int | None = Field(None, description="Walking time in minutes")
+    commute_driving: int | None = Field(None, description="Driving time in minutes")
 
     # Metadata storage
-    property_metadata: Optional[str] = Field(None, description="JSON metadata")
+    property_metadata: str | None = Field(None, description="JSON metadata")
 
     @classmethod
     def from_property_listing(cls, listing: "PropertyListing") -> "Listing":
@@ -121,7 +125,9 @@ class Listing(SQLModel, table=True):
             furnished=listing.furnished,
             available_date=listing.available_date,
             description=listing.description,
-            features=json.dumps(listing.features) if listing.features is not None else None,
+            features=(
+                json.dumps(listing.features) if listing.features is not None else None
+            ),
             parking=listing.parking,
             garden=listing.garden,
             balcony=listing.balcony,
@@ -198,12 +204,12 @@ class PriceHistory(SQLModel, table=True):
     Price change tracking for properties
     """
 
-    id: Optional[int] = Field(primary_key=True, default=None)
+    id: int | None = Field(primary_key=True, default=None)
     property_uid: str = Field(
         foreign_key="listing.uid", index=True, description="Reference to property"
     )
     price: str = Field(description="Price at time of recording")
-    price_numeric: Optional[int] = Field(None, description="Numeric price in pence")
+    price_numeric: int | None = Field(None, description="Numeric price in pence")
     recorded_at: datetime = Field(
         default_factory=datetime.utcnow,
         index=True,
@@ -211,10 +217,10 @@ class PriceHistory(SQLModel, table=True):
     )
 
     # Price change analysis
-    price_change: Optional[int] = Field(
+    price_change: int | None = Field(
         None, description="Change from previous price in pence"
     )
-    price_change_percent: Optional[float] = Field(
+    price_change_percent: float | None = Field(
         None, description="Percentage change from previous price"
     )
 
@@ -224,7 +230,7 @@ class SearchHistory(SQLModel, table=True):
     Track search configurations and results
     """
 
-    id: Optional[int] = Field(primary_key=True, default=None)
+    id: int | None = Field(primary_key=True, default=None)
     search_config: str = Field(description="JSON search configuration")
     executed_at: datetime = Field(
         default_factory=datetime.utcnow,
@@ -238,11 +244,11 @@ class SearchHistory(SQLModel, table=True):
     updated_properties: int = Field(description="Existing properties updated")
 
     # Performance metrics
-    execution_time: Optional[float] = Field(
+    execution_time: float | None = Field(
         None, description="Search execution time in seconds"
     )
-    api_calls: Optional[int] = Field(None, description="Number of API calls made")
-    success_rate: Optional[float] = Field(
+    api_calls: int | None = Field(None, description="Number of API calls made")
+    success_rate: float | None = Field(
         None, description="Success rate of scraping attempts"
     )
 
@@ -374,15 +380,15 @@ class Database:
 
     async def search_properties(
         self,
-        portal: Optional[Portal] = None,
-        min_price: Optional[int] = None,
-        max_price: Optional[int] = None,
-        bedrooms: Optional[int] = None,
-        property_type: Optional[PropertyType] = None,
-        postcode_area: Optional[str] = None,
-        max_commute: Optional[int] = None,
+        portal: Portal | None = None,
+        min_price: int | None = None,
+        max_price: int | None = None,
+        bedrooms: int | None = None,
+        property_type: PropertyType | None = None,
+        postcode_area: str | None = None,
+        max_commute: int | None = None,
         limit: int = 100,
-    ) -> List["PropertyListing"]:
+    ) -> list["PropertyListing"]:
         """
         Search properties with filters
 
@@ -401,7 +407,7 @@ class Database:
         """
         try:
             async with self.async_session() as session:
-                query = select(Listing).where(Listing.is_active == True)
+                query = select(Listing).where(Listing.is_active)
 
                 if portal:
                     query = query.where(Listing.portal == portal)
@@ -435,7 +441,7 @@ class Database:
             self.logger.error(f"Error searching properties: {e}")
             return []
 
-    async def get_statistics(self) -> Dict[str, Any]:
+    async def get_statistics(self) -> dict[str, Any]:
         """Get database statistics"""
         try:
             async with self.async_session() as session:
@@ -467,23 +473,31 @@ class Database:
 
                 portal_results = portal_stats.fetchall()
                 price_result = price_stats.first()
-                
+
                 return {
                     "portal_stats": [
                         {
-                            "portal": row[0].value if hasattr(row[0], 'value') else str(row[0]),
+                            "portal": (
+                                row[0].value
+                                if hasattr(row[0], "value")
+                                else str(row[0])
+                            ),
                             "total": row[1],
                             "with_price": row[2],
-                            "avg_price": row[3]
+                            "avg_price": row[3],
                         }
                         for row in portal_results
                     ],
                     "recent_activity": recent_activity.scalar(),
-                    "price_stats": {
-                        "min_price": price_result[0] if price_result else None,
-                        "max_price": price_result[1] if price_result else None,
-                        "avg_price": price_result[2] if price_result else None,
-                    } if price_result else {},
+                    "price_stats": (
+                        {
+                            "min_price": price_result[0] if price_result else None,
+                            "max_price": price_result[1] if price_result else None,
+                            "avg_price": price_result[2] if price_result else None,
+                        }
+                        if price_result
+                        else {}
+                    ),
                     "last_updated": datetime.utcnow().isoformat(),
                 }
 
@@ -491,13 +505,15 @@ class Database:
             self.logger.error(f"Error getting statistics: {e}")
             return {}
 
-    async def get_properties_since(self, since_time: datetime) -> List["PropertyListing"]:
+    async def get_properties_since(
+        self, since_time: datetime
+    ) -> list["PropertyListing"]:
         """
         Get properties updated since a specific time
-        
+
         Args:
             since_time: Get properties updated after this time
-            
+
         Returns:
             List of PropertyListing objects
         """
@@ -508,10 +524,10 @@ class Database:
                     .where(Listing.last_scraped >= since_time)
                     .order_by(Listing.last_scraped.desc())
                 )
-                
+
                 listings = result.scalars().all()
                 return [listing.to_property_listing() for listing in listings]
-                
+
         except Exception as e:
             self.logger.error(f"Error getting properties since {since_time}: {e}")
             return []

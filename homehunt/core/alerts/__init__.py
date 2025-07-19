@@ -7,10 +7,9 @@ from homehunt.core.alerts.alert_service import AlertService
 from homehunt.core.alerts.monitoring_service import MonitoringService, PropertyMonitor
 from homehunt.core.alerts.telegram_bot import TelegramBot
 
-
 __all__ = [
     "AlertService",
-    "MonitoringService", 
+    "MonitoringService",
     "PropertyMonitor",
     "TelegramBot",
 ]
